@@ -60,7 +60,7 @@ function renderList(){
 }
 function clearDetail(){selectedId=null;dirty=false;confirmingDelete=false;detailFingerprint='';el('inspector').replaceChildren(node('div','Seleziona una segnalazione per vedere i dettagli.','inspector-empty'));}
 function render(){
- if(selectedId&&!reports.some(r=>r.id===selectedId)){clearDetail();feedback('La segnalazione è stata eliminata.');el('queue-heading').focus();}
+ if(selectedId&&!saving&&!reports.some(r=>r.id===selectedId)){clearDetail();feedback('La segnalazione è stata eliminata.');el('queue-heading').focus();}
  visible=filterReports(reports,filters());updateSummary();renderList();renderMap();
  if(selectedId){const r=reports.find(r=>r.id===selectedId);if(r&&!dirty&&!saving&&!confirmingDelete&&JSON.stringify(r)!==detailFingerprint)renderDetail(r);}
 }

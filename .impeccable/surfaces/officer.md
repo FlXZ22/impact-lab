@@ -2,7 +2,7 @@
 
 Mode: Operate. Route: /officer (alias /comune).
 
-Confirmed: map-first, ranked reports on the left, selected report on the right. Inherit the citizen's white background, #004AAD blue, system sans controls, serif AI prose, logo and assets/icons. Citizen source files are outside the write boundary.
+Confirmed: map-first, ranked reports on the left, selected report on the right. Inherit the citizen's white background, #004AAD blue, system sans controls, serif AI prose, logo and assets/icons. Preserve citizen appearance; progress synchronization removes deleted records after a successful server lookup.
 
 Primary task: find the most urgent barrier, understand Claude's evidence, locate it, then assign a responsible body, override priority or update status. AI performs individual assessment only. No duplicate detection or chat assistant.
 
@@ -27,6 +27,8 @@ Source of truth: `public/officer/portal.css`, `index.html`, `portal.js` and `mod
 - **Accessibility and motion in source:** semantic buttons and labelled fields, a skip link, polite status feedback, keyboard-enabled map markers, visible 2px blue focus outlines, and text priority labels. Detail entry moves 5px over 200ms only when motion is allowed; reduced motion disables smooth scrolling and map animation.
 
 ## Verification and known limits
+
+Map/deletion follow-up: the portal sends an origin-only Referer for cross-origin tiles, correcting the OSM policy violation caused by `no-referrer`. A single OSM tile returned HTTP 200 and its Milan imagery was inspected. The inspector now offers “Elimina segnalazione”, with an inline permanent-deletion explanation, Annulla and Elimina definitivamente. These controls have a 44px minimum height and danger red treatment; no deletion occurs before explicit confirmation. Removal clears list, marker and inspector, returns focus to the list heading and invalidates stale refresh responses. All 12 current citizen IDs were verified in the running officer API, assessed and located. Latest typecheck and 40 tests passed; browser-level visual verification remains unavailable.
 
 Documentation checked against source on 2026-10-03. The implementation handoff reports a passing typecheck, 35 tests and three live Claude cases. Visual evidence remains unavailable: browser-control service exposed zero browsers, so desktop/mobile rendering, keyboard journeys, screen-reader behavior and 200% text scaling remain unverified. Several compact controls are 34–42px high in CSS; the product's 44px touch-target requirement is not established across this surface. The portal currently uses Italian copy and an Italian date formatter.
 

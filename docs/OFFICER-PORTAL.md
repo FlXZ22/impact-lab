@@ -14,6 +14,7 @@ Click a queue item or marker to select a report in all panes. Inspect the origin
 - Assign a responsible body or return to Claude's proposal.
 - Update status using the existing status-history API.
 - Retry failed AI assessments.
+- Delete one report after an explicit confirmation. This permanently removes the report, assessment, status history and attachment; attachment cleanup errors are reported separately.
 
 Assignment/priority and status have separate explicit save buttons. An unsaved edit blocks switching reports and has a discard action. Polling every eight seconds preserves draft values and restores focus after a clean inspector update. AI recommendations remain stored beneath human overrides. Assignment here is an internal record; it sends no email, dispatch or notification.
 
@@ -29,7 +30,7 @@ Output: title, summary, category, priority, reason, responsible body, confidence
 
 ## Storage and integration
 
-Migration **003_report_operations.sql** adds assessment, model/time, queue state/error, priority override, department override and edit time to both SQLite and PostgreSQL adapters. Existing report fields and the citizen response payload stay compatible. Status changes use the existing `updateStatus` operation and citizen progress history. The portal's scripts/styles live entirely under `public/officer`; the existing citizen files are not imported or edited by this feature.
+Migration **003_report_operations.sql** adds assessment, model/time, queue state/error, priority override, department override and edit time to both SQLite and PostgreSQL adapters. Existing report fields and the citizen response payload stay compatible. Status changes use the existing `updateStatus` operation and citizen progress history. The portal's scripts/styles live under `public/officer`. Citizen appearance is unchanged; its progress refresh now also removes deleted reports from this device's tracker after a successful lookup, preserving any newly submitted reports outside that lookup.
 
 Operations endpoints:
 
@@ -38,16 +39,18 @@ Operations endpoints:
 | `GET /api/operations/config` | AI availability/model and allowed categories/bodies |
 | `GET /api/operations/reports` | Complete queue, sorted by effective priority |
 | `PATCH /api/operations/reports/:id` | `priority_override` / `department_override`; `null` restores the AI proposal |
+| `DELETE /api/operations/reports/:id` | Permanently remove one report; JSON `{ "confirm": true }` required |
 | `POST /api/operations/reports/:id/retry` | Requeue a failed assessment |
 | `PATCH /api/reports/:id` | Existing status update and timeline operation |
 
 The portal has no new accounts or authentication. Like the citizen MVP, it is a trusted local prototype. Anyone who can access the server can view reports and use officer controls. A deployed municipal service needs officer access control. The current full-queue response is appropriate for a hackathon dataset; larger deployments need paginated/windowed loading.
 
-OpenStreetMap tiles are loaded directly in the browser; its service sees the normal tile requests. A portal-only CSP change permits those tiles and Leaflet positioning styles. The citizen page keeps its existing CSP. Tile failure leaves the list and inspector functional.
+OpenStreetMap tiles are loaded directly in the browser; its service sees the normal tile requests. The portal uses `strict-origin-when-cross-origin` in its response header, HTML and Leaflet tile options so requests carry the site origin, as required by the [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/). The previous global `no-referrer` policy suppressed this required header and could cause the reported 403 block. There is no proxy, cache bypass or bulk tile download. A portal-only CSP change permits those tiles and Leaflet positioning styles. The citizen page keeps its existing CSP and `no-referrer`. Tile failure leaves the list and inspector functional.
 
 ## Verification
 
-- `npm run check`: TypeScript checks passed; **35 tests passed**. New tests cover citizen save → pending portal record → assessment → filtering/ranking → human overrides, retry behavior, status history, invalid edits and route/assets/CSP isolation.
+- `npm run check`: TypeScript checks passed; **40 tests passed**. Tests cover citizen save → pending portal record → assessment → filtering/ranking → human overrides, retry behavior, status history, invalid edits, route/assets/header isolation, all 57 reports beyond the default list limit, confirmed deletion/photo cleanup, late worker completion after deletion, and citizen tracking during concurrent creation/deletion.
+- Live server verification after the map fix: citizen and officer APIs both returned the same 12 report IDs; all 12 were assessed and located. `/officer` and `/comune` returned the corrected referrer header. A single normal OSM tile request returned HTTP 200; its PNG was inspected and showed the Milan map. No existing citizen report was deleted for testing.
 - `npm run test:operations:live`: **three real Claude cases passed** on the configured `claude-opus-5`: railway lift → `trenord_rfi` (priority 4, confidence 0.72), synthetic pothole photo + text → `comune_di_milano` (priority 4, confidence 0.72), ambiguous report → `unknown` (priority 1, confidence 0.20). Persistence and officer priority/assignment/status also passed. These are a small integration smoke test, not a routing-accuracy benchmark.
 - Test fixtures are used only in isolated offline tests. The live script uses real API calls and a disposable temporary database.
 - PostgreSQL migration/adapter is implemented but not exercised here: no `TEST_DATABASE_URL` was configured.
