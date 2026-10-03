@@ -1,0 +1,24 @@
+{
+  "name": "segnalami",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Accessible civic reporting prototype for Milan, powered by Claude",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js",
+    "test": "node --test",
+    "eval": "node --env-file-if-exists=.env eval/run.js",
+    "test:live": "node --env-file-if-exists=.env scripts/live-flows.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "express": "^5.1.0",
+    "leaflet": "^1.9.4",
+    "sharp": "^0.35.5"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "comune_di_milano": { "label_it": "Comune di Milano", "label_en": "City of Milan", "type": "link", "value": "TODO_VERIFY", "verified": false },
+  "atm": { "label_it": "ATM · trasporto urbano", "label_en": "ATM · city transport", "type": "link", "value": "TODO_VERIFY", "verified": false },
+  "trenord_rfi": { "label_it": "Trenord / RFI · ferrovia", "label_en": "Trenord / RFI · railway", "type": "link", "value": "TODO_VERIFY", "verified": false },
+  "green_space_operator": { "label_it": "Gestore del verde", "label_en": "Green space operator", "type": "mailto", "value": "TODO_VERIFY", "verified": false },
+  "local_police": { "label_it": "Polizia locale", "label_en": "Local police", "type": "tel", "value": "TODO_VERIFY", "verified": false },
+  "unknown": { "label_it": "Da chiarire", "label_en": "Needs clarification", "type": "link", "value": "TODO_VERIFY", "verified": false }
+}
