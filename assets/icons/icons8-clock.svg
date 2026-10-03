@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="clock-icon" aria-hidden="true">
+  <!-- Clock Outer Dial -->
+  <circle class="clock-dial" cx="23.5" cy="23.5" r="19.5" stroke="currentColor" stroke-width="3" />
+
+  <!-- Center Pivot -->
+  <circle class="clock-pivot" cx="23.5" cy="24.5" r="1.5" fill="currentColor" />
+
+  <!-- Hour Hand (pointing to 3 o'clock) -->
+  <line class="hand hand-hour" x1="23.5" y1="24.5" x2="32" y2="24.5" stroke="currentColor" stroke-width="3" stroke-linecap="square" />
+
+  <!-- Minute Hand (pointing to 12 o'clock) -->
+  <line class="hand hand-minute" x1="23.5" y1="24.5" x2="23.5" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="square" />
+</svg>

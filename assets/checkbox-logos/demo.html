@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Checkbox Demo</title>
+<script src="animated-checkbox.js"></script>
+<style>
+  body {
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+    background: #fafafa;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 24px;
+    padding: 48px 56px;
+    display: grid;
+    gap: 28px;
+  }
+  .row { display: flex; align-items: center; gap: 16px; font-size: 17px; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>&lt;animated-checkbox&gt; demo</h1>
+
+    <label class="row">
+      <animated-checkbox size="32"></animated-checkbox>
+      Default (green)
+    </label>
+
+    <label class="row">
+      <animated-checkbox size="32" color="#007AFF" checked></animated-checkbox>
+      Blue, starts checked
+    </label>
+
+    <label class="row">
+      <animated-checkbox size="32" color="#000" indeterminate></animated-checkbox>
+      Black, starts indeterminate
+    </label>
+
+    <label class="row">
+      <animated-checkbox size="32" disabled checked></animated-checkbox>
+      Disabled
+    </label>
+
+    <div class="row" style="font-size:14px;color:#888">
+      Click any checkbox — or set <code>el.checked</code> / <code>el.indeterminate</code> from JS.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clock Icon</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #141724;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* Interactive Icon Wrapper */
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 24px;
+      border-radius: 28px;
+      cursor: pointer;
+      outline: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  filter 0.4s ease;
+    }
+
+    /* Hover Interaction: Float & Ambient Shadow */
+    .icon-box:hover,
+    .icon-box.animating {
+      transform: translateY(-4px) scale(1.04);
+      filter: drop-shadow(0 12px 20px rgba(20, 23, 36, 0.14));
+    }
+
+    /* Click / Active: Tactile Tap */
+    .icon-box:active {
+      transform: translateY(-1px) scale(0.97);
+      filter: drop-shadow(0 4px 8px rgba(20, 23, 36, 0.10));
+      transition-duration: 0.1s;
+    }
+
+    .icon-box:focus-visible {
+      outline: 2px solid #d9a43a;
+      outline-offset: 6px;
+    }
+
+    /* SVG Base (exact Icons8 48x48 proportions) */
+    .clock-icon {
+      width: 96px;
+      height: 96px;
+      display: block;
+      overflow: visible;
+      color: #141724;
+    }
+
+    /* Clock Hands Dynamic Rotation */
+    .clock-icon .hand {
+      transform-origin: 23.5px 24.5px;
+      transition: transform 0.5s cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+
+    .icon-box:hover .hand-minute,
+    .icon-box.animating .hand-minute {
+      animation: spinMinute 0.75s cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+    }
+
+    .icon-box:hover .hand-hour,
+    .icon-box.animating .hand-hour {
+      animation: spinHour 0.75s cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+    }
+
+    @keyframes spinMinute {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spinHour {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(60deg); }
+    }
+
+    /* Minimal Actions */
+    .actions-wrap {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .copy-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      background: #141724;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Minimal Clock Icon -->
+  <button class="icon-box" id="iconBtn" aria-label="Clock Icon">
+    <svg class="clock-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <!-- Outer Dial -->
+      <circle class="clock-dial" cx="23.5" cy="23.5" r="19.5" stroke="currentColor" stroke-width="3" />
+
+      <!-- Center Pivot Hub -->
+      <circle class="clock-pivot" cx="23.5" cy="24.5" r="1.5" fill="currentColor" />
+
+      <!-- Hour Hand (pointing to 3 o'clock) -->
+      <line class="hand hand-hour" x1="23.5" y1="24.5" x2="32" y2="24.5" stroke="currentColor" stroke-width="3" stroke-linecap="square" />
+
+      <!-- Minute Hand (pointing to 12 o'clock) -->
+      <line class="hand hand-minute" x1="23.5" y1="24.5" x2="23.5" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="square" />
+    </svg>
+  </button>
+
+  <div class="actions-wrap">
+    <p class="hint">Hover or click to animate</p>
+    <button class="copy-btn" id="copyBtn">Copy SVG</button>
+  </div>
+
+  <div class="toast" id="toast">SVG copied to clipboard</div>
+
+  <script>
+    const iconBtn = document.getElementById('iconBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+
+    // Click / tap trigger (Icons8 style click response)
+    iconBtn.addEventListener('click', () => {
+      iconBtn.classList.remove('animating');
+      void iconBtn.offsetWidth; // trigger reflow
+      iconBtn.classList.add('animating');
+      setTimeout(() => iconBtn.classList.remove('animating'), 750);
+    });
+
+    // Copy SVG
+    copyBtn.addEventListener('click', () => {
+      const svg = iconBtn.querySelector('svg').outerHTML;
+      navigator.clipboard.writeText(svg).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,25 +1,118 @@
 <!doctype html>
 <html lang="it">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SegnalaMi · Una città accessibile</title><meta name="description" content="Prepara una segnalazione accessibile per Milano, in italiano o inglese."><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><script type="module" src="/citizen.js"></script></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+  <title>SegnalaMi</title>
+  <meta name="description" content="Segnala una barriera a Milano: scrivi, detta o manda una foto. Report an accessibility barrier in Milan.">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
 <body>
-<a class="skip" href="#main" data-i18n="skip">Vai al contenuto</a>
-<header class="site-header"><a class="brand" href="/" aria-label="SegnalaMi home"><span class="brand-mark" aria-hidden="true">s<span>m</span></span>Segnala<span>Mi</span></a><nav aria-label="Menu"><a href="/" aria-current="page" data-i18n="citizen">Per i cittadini</a><a href="/officer" data-i18n="officer">Area operatori</a></nav><div class="preferences"><button id="large-text" type="button" aria-pressed="false" data-i18n="largeText">A+ Testo grande</button><button id="language" type="button" aria-label="Switch to English">EN</button></div></header>
-<main id="main" class="page">
-<div class="intro"><p class="eyebrow" data-i18n="eyebrow">MILANO, PIÙ ACCESSIBILE</p><h1 data-i18n="title">Un problema in città?<br>Facciamoci capire.</h1><p class="lede" data-i18n="intro">Racconta cosa non funziona. Ti aiutiamo a preparare una segnalazione chiara, per chi può intervenire.</p></div>
-<ol class="steps" aria-label="Progress"><li class="active" id="step-one"><span>1</span><span data-i18n="stepOne">Racconta il problema</span></li><li id="step-two"><span>2</span><span data-i18n="stepTwo">Controlla e scegli come inviare</span></li></ol>
-<div class="workspace"><section class="panel form-panel" aria-labelledby="form-title"><div class="section-heading"><span class="section-number">01</span><h2 id="form-title" data-i18n="formTitle">Cosa vuoi segnalare?</h2></div>
-<form id="report-form">
-<label for="description" data-i18n="description">Descrivi il problema</label><p class="hint" id="description-help" data-i18n="descriptionHelp">Cosa è successo? Dove? Quale difficoltà crea?</p><textarea id="description" name="description" rows="5" maxlength="5000" required aria-describedby="description-help" data-placeholder="descriptionPlaceholder" placeholder="Ad esempio: l’ascensore della stazione ferroviaria non funziona. Non riesco a raggiungere il binario con la sedia a rotelle."></textarea>
-<div class="input-footer"><button class="text-button" id="microphone" type="button" aria-pressed="false" data-i18n="dictate">◉ Detta il problema</button><span class="hint" id="character-count">0 / 5000</span></div><p id="voice-help" class="hint" data-i18n="voiceHelp">La dettatura dipende dal browser e può usare il suo servizio vocale. L’app non salva audio.</p>
-<label for="address" data-i18n="address">Dove si trova il problema? <span class="optional">Facoltativo</span></label><input id="address" name="address" maxlength="300" autocomplete="off" data-placeholder="addressPlaceholder" placeholder="Via, numero civico o nome della fermata"><button class="text-button location-button" id="geolocate" type="button" data-i18n="geolocate">⌖ Usa la mia posizione</button><p class="hint" data-i18n="locationHelp">Usa la posizione solo se ti trovi vicino al problema. Non inserire il tuo indirizzo personale.</p>
-<label for="photo" data-i18n="photo">Aggiungi una foto <span class="optional">Facoltativo</span></label><div class="upload"><span class="upload-icon" aria-hidden="true">＋</span><div><input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-help"><p id="photo-help" class="hint" data-i18n="photoHelp">JPG, PNG o WebP · massimo 4 MB. Nessun volto o targa.</p></div></div><div id="photo-preview" hidden><img id="preview-image" alt=""><button type="button" id="remove-photo" class="text-button" data-i18n="removePhoto">Rimuovi foto</button></div>
-<div class="privacy-note"><span aria-hidden="true">◇</span><p data-i18n="privacyNotice">La tua privacy conta. Non inserire nomi, telefoni, email, volti o targhe. Testo e foto vengono analizzati da Claude. La foto non viene salvata.</p></div><label class="checkbox"><input id="privacy" type="checkbox" required><span data-i18n="privacyCheck">Ho evitato dati personali e autorizzo l’analisi con Claude.</span></label>
-<button type="submit" id="prepare" class="primary"><span data-i18n="prepare">Prepara la mia segnalazione</span><span aria-hidden="true">→</span></button>
-<p class="hint align-center" data-i18n="neverSend">Non inviamo nulla. Decidi tu cosa inviare e a chi.</p>
-</form></section>
-<aside class="side-notes"><div class="note-card"><span class="mini-label" data-i18n="howLabel">UN AIUTO, PASSO DOPO PASSO</span><h2 data-i18n="howTitle">La tua voce.<br>Una richiesta chiara.</h2><ol class="how-list"><li><span aria-hidden="true">01</span><div><h3 data-i18n="howOneTitle">Scrivi come preferisci</h3><p data-i18n="howOne">Anche poche parole, in italiano o in inglese.</p></div></li><li><span aria-hidden="true">02</span><div><h3 data-i18n="howTwoTitle">Claude prepara la bozza</h3><p data-i18n="howTwo">Riordina i dettagli e propone priorità e destinatario.</p></div></li><li><span aria-hidden="true">03</span><div><h3 data-i18n="howThreeTitle">L’ultima parola è tua</h3><p data-i18n="howThree">Controlla, modifica e invia dal tuo canale.</p></div></li></ol></div><div class="small-note"><span class="status-dot"></span><p data-i18n="prototype">Prototipo per l’accessibilità a Milano. Non è un servizio ufficiale del Comune.</p></div><p class="hint emergency" data-i18n="emergency">Non usare questo modulo per le emergenze: le segnalazioni non sono monitorate in tempo reale.</p></aside></div>
-<p id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
-<section id="clarification" class="panel" hidden tabindex="-1"><h2 data-i18n="clarifyTitle">Serve qualche dettaglio in più</h2><p data-i18n="clarifyHelp">Aggiungi le risposte alla descrizione, poi prepara di nuovo la segnalazione.</p><ul id="questions"></ul><button type="button" id="back-to-description" class="secondary" data-i18n="addDetails">Aggiungi dettagli</button></section>
-<section id="result" class="panel result-panel" hidden aria-labelledby="result-title" tabindex="-1"><div class="section-heading"><span class="section-number">02</span><h2 id="result-title" data-i18n="resultTitle">La tua segnalazione, da controllare</h2></div><p data-i18n="reviewHelp">Questa è una proposta di Claude. Controlla tutti i campi e i due messaggi prima di salvare o inviare.</p><form id="review-form"><div class="two-columns"><div><label for="short_description" data-i18n="summary">In breve</label><input id="short_description" maxlength="300" required><label for="category" data-i18n="category">Categoria</label><input id="category" maxlength="100" required><label for="location_text" data-i18n="location">Luogo del problema</label><input id="location_text" maxlength="300" required><label for="affected_people" data-i18n="affected">Persone coinvolte</label><select id="affected_people" multiple size="4" aria-describedby="affected-help"></select><p class="hint" id="affected-help" data-i18n="multiHelp">Puoi scegliere più voci con Ctrl o Cmd. Con la tastiera, usa anche le frecce.</p></div><div><label for="competence" data-i18n="responsible">Destinatario proposto</label><select id="competence"></select><p id="confidence" class="hint"></p><label for="urgency_score" data-i18n="urgency">Priorità (1 bassa – 5 massima)</label><select id="urgency_score"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><label for="urgency_reason" data-i18n="reason">Perché questa priorità?</label><textarea id="urgency_reason" rows="4" maxlength="1200" required></textarea></div></div><div class="drafts"><div><label for="draft_message_it">Messaggio in italiano</label><textarea id="draft_message_it" lang="it" rows="8" maxlength="4000" required></textarea><button class="text-button copy" data-copy="draft_message_it" type="button" data-i18n="copyItalian">Copia in italiano</button></div><div><label for="draft_message_en">Message in English</label><textarea id="draft_message_en" lang="en" rows="8" maxlength="4000" required></textarea><button class="text-button copy" data-copy="draft_message_en" type="button" data-i18n="copyEnglish">Copia in inglese</button></div></div><p class="hint" data-i18n="draftReminder">Se cambi i dettagli sopra, aggiorna anche i messaggi: non vengono riscritti automaticamente.</p><label class="checkbox"><input id="review-confirmed" type="checkbox" required><span data-i18n="reviewCheck">Ho controllato la proposta e i messaggi. Non contengono dati personali.</span></label><div class="actions"><button type="submit" id="save" class="primary" data-i18n="save">Salva nella coda del prototipo</button><button type="button" id="download" class="secondary" data-i18n="download">Scarica il pacchetto</button><a id="channel" class="secondary" hidden></a><button type="button" id="unverified-channel" class="secondary" disabled data-i18n="channelUnverified">Canale da verificare</button></div><p id="channel-note" class="hint" data-i18n="channelNote">Il contatto del destinatario deve essere verificato. Puoi copiare o scaricare il testo. Nessun invio automatico.</p></form></section>
-</main><footer><span>SegnalaMi <span aria-hidden="true">↗</span></span><p data-i18n="footer">Una città più accessibile comincia da una voce ascoltata.</p><span class="footer-tag">HACKATHON PROTOTYPE</span></footer>
-</body></html>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <!-- From assets/icons -->
+    <symbol id="a-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> <line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> <line x1="8" y1="22" x2="16" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="a-close" viewBox="0 0 100 100"><path fill="currentColor" d="M23.76 77.86C23.34 77.7 22.29 76.62 22.13 76.2C21.93 75.69 21.97 74.19 22.19 73.65C22.33 73.33 25.79 69.78 33.73 61.84C45.01 50.55 45.06 50.5 45.06 49.99C45.06 49.49 45.01 49.44 33.72 38.15C25.78 30.2 22.33 26.67 22.19 26.35C21.97 25.81 21.93 24.31 22.13 23.8C22.3 23.35 23.35 22.3 23.8 22.13C24.24 21.96 25.76 21.96 26.2 22.13C26.39 22.2 26.77 22.46 27.05 22.7C27.33 22.95 32.52 28.09 38.58 34.14C49.45 45 49.61 45.14 50.05 45.1C50.46 45.07 51.42 44.15 61.84 33.73C69.78 25.79 73.33 22.33 73.65 22.19C74.19 21.97 75.69 21.93 76.2 22.13C76.65 22.3 77.7 23.35 77.87 23.8C78.04 24.24 78.04 25.76 77.87 26.2C77.65 26.78 76.54 27.92 65.52 38.94C55.47 48.97 54.88 49.59 54.88 50C54.88 50.41 55.46 51.02 65.51 61.05C76.46 71.98 77.65 73.21 77.87 73.8C78.04 74.24 78.04 75.76 77.87 76.2C77.71 76.63 76.62 77.71 76.19 77.88C75.68 78.07 74.18 78.03 73.65 77.81C73.33 77.67 69.81 74.24 61.85 66.28C51.34 55.76 50.48 54.93 50.06 54.9C49.6 54.86 49.52 54.94 38.58 65.85C32.52 71.9 27.33 77.05 27.05 77.29C26.77 77.54 26.39 77.8 26.2 77.87C25.78 78.03 24.17 78.03 23.76 77.86Z"/></symbol>
+    <symbol id="a-done" viewBox="0 0 100 100"><path fill="currentColor" d="M39.67 82.72C38.7 82.16 38.15 81.77 37.85 81.44C37.66 81.23 36.48 79.89 35.22 78.46C33.96 77.03 31.59 74.32 29.94 72.45C28.28 70.58 26.68 68.75 26.37 68.38C25.45 67.28 22.86 64.34 22.45 63.93C21.44 62.92 19.39 60.52 18.57 59.39C18.16 58.83 18.07 58.59 18.02 57.99C17.94 56.88 18.07 56.51 18.79 55.72C19.36 55.09 19.53 54.99 20.27 54.8C21.05 54.59 21.14 54.59 21.9 54.8C22.74 55.03 22.7 54.99 24.57 56.92C25.04 57.39 28.52 61.34 29.5 62.5C30.36 63.52 33.9 67.54 34.46 68.12C34.96 68.65 37.65 71.74 38.69 72.99C39.1 73.48 39.56 73.92 39.72 73.96C40.28 74.1 40.61 73.9 40.95 73.22C41.14 72.86 41.45 72.37 41.64 72.13C41.84 71.89 42 71.63 42 71.56C42 71.48 42.18 71.2 42.41 70.93C42.64 70.66 42.93 70.2 43.05 69.91C43.18 69.62 43.4 69.28 43.53 69.16C43.67 69.04 43.89 68.71 44.03 68.44C44.17 68.16 44.37 67.83 44.48 67.71C44.59 67.58 44.83 67.24 45 66.94C45.51 66.08 46.03 65.28 46.53 64.59C46.79 64.23 47 63.88 47 63.79C47 63.71 47.23 63.38 47.5 63.06C47.77 62.74 48 62.42 48 62.33C48 62.25 48.21 61.89 48.47 61.54C48.97 60.85 49.49 60.05 50 59.18C50.17 58.89 50.41 58.54 50.52 58.42C50.63 58.29 50.84 57.96 50.98 57.68C51.12 57.4 51.32 57.09 51.44 57C51.55 56.91 51.79 56.54 51.96 56.2C52.14 55.85 52.45 55.37 52.64 55.13C52.84 54.89 53 54.63 53 54.56C53 54.49 53.23 54.16 53.5 53.83C53.77 53.5 54 53.15 54 53.06C54 52.98 54.2 52.63 54.44 52.3C55.37 50.99 55.75 50.42 55.95 50C56.06 49.76 56.27 49.43 56.41 49.28C56.56 49.12 56.82 48.75 56.99 48.45C57.4 47.77 57.98 46.86 58.34 46.34C58.5 46.12 58.72 45.78 58.84 45.58C58.96 45.38 59.19 45.05 59.34 44.83C59.49 44.61 59.75 44.18 59.92 43.87C60.09 43.55 60.32 43.22 60.44 43.12C60.55 43.03 60.81 42.64 61.02 42.26C61.45 41.45 61.78 40.94 62.34 40.21C62.57 39.92 62.85 39.46 62.98 39.19C63.11 38.91 63.36 38.52 63.53 38.31C63.7 38.11 63.94 37.74 64.06 37.5C64.18 37.26 64.45 36.88 64.64 36.65C64.84 36.43 65 36.17 65 36.09C65 36 65.21 35.64 65.47 35.28C66.02 34.52 66.57 33.7 67 32.96C67.17 32.67 67.47 32.23 67.66 31.98C67.85 31.74 68 31.49 68 31.42C68 31.36 68.16 31.11 68.36 30.87C68.55 30.63 68.84 30.18 69 29.88C69.15 29.57 69.4 29.18 69.54 29.03C69.68 28.87 69.94 28.5 70.12 28.2C70.66 27.29 70.93 26.86 71.22 26.45C71.37 26.24 71.6 25.9 71.72 25.7C71.84 25.5 72.18 24.98 72.47 24.54C72.76 24.1 73 23.7 73 23.65C73 23.6 73.22 23.29 73.5 22.95C73.78 22.62 74 22.27 74 22.18C74 22.09 74.18 21.78 74.41 21.48C74.64 21.18 74.98 20.68 75.17 20.38C76.48 18.24 77.29 17.48 78.55 17.22C79.18 17.09 79.26 17.1 79.93 17.44C80.67 17.82 81.67 18.78 81.88 19.32C82.08 19.84 82.02 21.02 81.78 21.46C81.66 21.67 81.38 22.19 81.16 22.59C80.94 23 80.63 23.5 80.46 23.7C80.3 23.9 80.04 24.29 79.9 24.57C79.76 24.85 79.55 25.16 79.43 25.26C79.31 25.35 79.11 25.66 78.98 25.94C78.75 26.42 78.38 26.99 77.44 28.3C77.2 28.63 77 28.98 77 29.06C77 29.15 76.78 29.5 76.5 29.83C76.22 30.16 76 30.49 76 30.56C76 30.63 75.84 30.89 75.64 31.13C75.45 31.37 75.14 31.85 74.96 32.2C74.79 32.54 74.55 32.91 74.44 33C74.32 33.09 74.1 33.44 73.93 33.76C73.76 34.09 73.57 34.39 73.5 34.44C73.43 34.48 73.24 34.78 73.07 35.1C72.91 35.42 72.65 35.83 72.5 36C72.35 36.17 72.12 36.51 72 36.75C71.88 36.99 71.6 37.41 71.39 37.67C71.17 37.94 71 38.23 71 38.32C71 38.41 70.78 38.74 70.5 39.06C70.22 39.38 70 39.71 70 39.79C70 39.88 69.79 40.23 69.53 40.59C69.03 41.28 68.51 42.08 68 42.94C67.83 43.24 67.59 43.58 67.48 43.71C67.37 43.83 67.17 44.16 67.03 44.44C66.89 44.71 66.67 45.04 66.53 45.16C66.4 45.28 66.18 45.62 66.05 45.91C65.93 46.2 65.64 46.66 65.41 46.93C65.18 47.2 65 47.48 65 47.56C65 47.63 64.84 47.89 64.64 48.13C64.45 48.37 64.16 48.82 64 49.12C63.84 49.43 63.58 49.86 63.41 50.06C63.03 50.52 62.39 51.52 62.08 52.12C61.95 52.36 61.72 52.7 61.56 52.88C61.41 53.05 61.16 53.41 61.01 53.69C60.87 53.96 60.56 54.45 60.34 54.77C60.12 55.08 59.84 55.5 59.72 55.7C59.6 55.9 59.37 56.24 59.22 56.45C58.93 56.86 58.66 57.29 58.12 58.2C57.94 58.5 57.68 58.87 57.54 59.03C57.4 59.18 57.13 59.59 56.95 59.94C56.76 60.28 56.49 60.74 56.34 60.95C56.19 61.17 55.96 61.51 55.84 61.7C55.72 61.9 55.5 62.24 55.34 62.46C54.98 62.98 54.4 63.9 53.99 64.58C53.82 64.87 53.56 65.24 53.42 65.4C53.29 65.56 53.07 65.92 52.94 66.22C52.82 66.51 52.6 66.84 52.47 66.96C52.33 67.09 52.14 67.35 52.04 67.54C51.94 67.74 51.67 68.15 51.43 68.46C51.19 68.77 51 69.09 51 69.18C51 69.27 50.77 69.62 50.5 69.95C50.23 70.29 50 70.6 50 70.65C50 70.7 49.76 71.1 49.47 71.54C49.18 71.98 48.84 72.5 48.72 72.7C48.6 72.9 48.37 73.24 48.22 73.45C47.93 73.86 47.66 74.29 47.12 75.2C46.94 75.5 46.68 75.87 46.54 76.03C46.4 76.18 46.15 76.57 46 76.88C45.84 77.18 45.55 77.63 45.36 77.87C45.16 78.11 45 78.36 45 78.42C45 78.49 44.85 78.74 44.66 78.98C44.47 79.23 44.17 79.67 44 79.96C43.18 81.35 42.75 81.84 41.9 82.36C40.99 82.91 40.22 83.03 39.67 82.72Z"/></symbol>
+    <symbol id="a-clock" viewBox="0 0 48 48"><!-- Clock Outer Dial --> <circle class="clock-dial" cx="23.5" cy="23.5" r="19.5" stroke="currentColor" stroke-width="3" /> <!-- Center Pivot --> <circle class="clock-pivot" cx="23.5" cy="24.5" r="1.5" fill="currentColor" /> <!-- Hour Hand (pointing to 3 o'clock) --> <line class="hand hand-hour" x1="23.5" y1="24.5" x2="32" y2="24.5" stroke="currentColor" stroke-width="3" stroke-linecap="square" /> <!-- Minute Hand (pointing to 12 o'clock) --> <line class="hand hand-minute" x1="23.5" y1="24.5" x2="23.5" y2="12" stroke="currentColor" stroke-width="3" stroke-linecap="square" /></symbol>
+    <!-- Not in assets: drawn to match -->
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.1l1.3-2h6.2l1.3 2h2.1A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.75" r="3.25"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5.5M6 11.5l6-6 6 6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.25"/></symbol>
+    <symbol id="i-pin-off" viewBox="0 0 24 24"><path d="M8.2 4.8A6.5 6.5 0 0 1 18.5 10c0 1.9-.8 3.8-1.9 5.4M14.3 18.7C13 20.1 12 21 12 21s-6.5-5.6-6.5-11c0-.9.2-1.8.5-2.6M3.5 3.5l17 17"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4.5v3.5h-3.5"/></symbol>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/">
+        <img src="/logo.png" width="144" height="28" alt="SegnalaMi">
+      </a>
+      <div class="topbar-actions">
+        <button id="my-reports-button" class="pill-button" type="button" aria-haspopup="dialog" hidden>
+          <svg class="icon asset" aria-hidden="true"><use href="#a-clock"/></svg>
+          <span class="pill-label" data-i18n="myReports"></span>
+          <span id="my-reports-count" class="pill-count"></span>
+        </button>
+        <button id="language" class="lang-toggle" type="button"></button>
+      </div>
+    </header>
+
+    <main id="conversation" class="conversation" tabindex="-1">
+      <ol id="messages" class="messages" data-i18n-label="conversationLabel"></ol>
+    </main>
+
+    <footer class="dock" id="dock">
+      <p id="dock-note" class="dock-note" role="status" hidden></p>
+
+      <div class="composer-card">
+        <div id="attachment" class="attachment" hidden>
+          <figure class="attachment-thumb">
+            <img id="attachment-image" alt="">
+            <span class="attachment-spinner" aria-hidden="true"></span>
+          </figure>
+          <span id="attachment-label" class="attachment-label"></span>
+          <button id="attachment-remove" class="ghost-button" type="button" data-i18n-label="removePhoto">
+            <svg class="icon asset" aria-hidden="true"><use href="#a-close"/></svg>
+          </button>
+        </div>
+
+        <form id="composer" class="composer" novalidate>
+          <label class="ghost-button" id="photo-button" data-i18n-title="addPhoto">
+            <input id="photo-input" class="visually-hidden" type="file" accept="image/*">
+            <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>
+            <span class="visually-hidden" data-i18n="addPhoto"></span>
+          </label>
+
+          <label class="visually-hidden" for="message-input" data-i18n="messageLabel"></label>
+          <textarea id="message-input" rows="1" enterkeyhint="send" autocomplete="off" spellcheck="true" data-i18n-placeholder="placeholder"></textarea>
+
+          <button id="send-button" class="send" type="submit" data-i18n-label="send" disabled>
+            <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
+          </button>
+          <button id="mic-button" class="ghost-button mic" type="button" aria-pressed="false" data-i18n-label="dictate">
+            <svg class="icon asset" aria-hidden="true"><use href="#a-mic"/></svg>
+          </button>
+        </form>
+
+        <div id="listening" class="listening" hidden>
+          <button id="listen-cancel" class="ghost-button" type="button" data-i18n-label="cancelDictation">
+            <svg class="icon asset" aria-hidden="true"><use href="#a-close"/></svg>
+          </button>
+          <div class="listening-panel">
+            <canvas id="waveform" class="waveform" aria-hidden="true"></canvas>
+            <span class="listening-label" id="listening-label">
+              <span class="rec-dot" aria-hidden="true"></span>
+              <span id="listening-text" data-i18n="listening"></span>
+              <time id="listen-timer">0:00</time>
+            </span>
+          </div>
+          <button id="listen-stop" class="send" type="button" data-i18n-label="stopDictation">
+            <svg class="icon asset" aria-hidden="true"><use href="#a-done"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="dock-footnote" data-i18n="footnote"></p>
+    </footer>
+  </div>
+
+  <dialog id="my-reports" class="sheet" aria-labelledby="my-reports-title">
+    <div class="sheet-inner">
+      <header class="sheet-head">
+        <h2 id="my-reports-title" data-i18n="myReports"></h2>
+        <button id="my-reports-close" class="ghost-button" type="button" data-i18n-label="close">
+          <svg class="icon asset" aria-hidden="true"><use href="#a-close"/></svg>
+        </button>
+      </header>
+      <p class="sheet-hint" data-i18n="myReportsHint"></p>
+      <ol id="my-reports-list" class="tracked-list"></ol>
+      <p id="my-reports-empty" class="sheet-empty" data-i18n="myReportsEmpty" hidden></p>
+    </div>
+  </dialog>
+
+  <p id="announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>

@@ -1,55 +1,36 @@
-# Verification — 3 October 2026
-
-## Results
+# Verification — 3 October 2026 (chat MVP)
 
 | Check | Result |
 | --- | --- |
-| `npm test` | **12 passed, 0 failed** (includes the parent integration test) |
-| `npm run test:live`: text → Claude → review → queue | **Blocked**: no `ANTHROPIC_API_KEY` |
-| `npm run test:live`: photo + text → Claude → review → queue | **Blocked**: no `ANTHROPIC_API_KEY` |
-| `npm run test:live`: officer filter → override → sorted queue | **Passed**, with persisted JSON checked |
-| Live clarification check | **Blocked**: no API key |
-| `npm run eval` | Executed; **0/15 evaluated; routing accuracy unavailable** |
-| Dependency audit after Sharp update | **0 known vulnerabilities** reported by npm |
-| JavaScript syntax checks | Passed |
-| Server startup and HTTP routes | Passed; localhost citizen/officer pages and assets served |
-| Visual browser / keyboard / responsive QA | Not completed: browser-control service listed no available browser; both Chrome and in-app browser were unavailable |
-| Real microphone transcription | Not tested: requires a supported browser, permission and a person speaking |
-| Live OpenStreetMap tiles / geolocation permission | Not verified in a browser |
+| `npm run typecheck` (tsc strict, server `.ts` + browser JSDoc `.js`) | Passed, 0 errors |
+| `npm test` | 23 passed, Postgres contract skipped without `TEST_DATABASE_URL` |
+| Repository contract on PostgreSQL 17 (Docker) | 5/5 passed; schema, constraints, RLS and `schema_migrations` inspected with `psql` |
+| App end to end with `STORAGE_DRIVER=postgres` | Report created over HTTP and read back from Postgres |
+| Live Claude reply (`claude-opus-5`) | Italian acknowledgement in about 2.8 s, `source: claude` |
+| Headless Chromium, 390 × 844 and 1280 × 860 (white theme) | Welcome, sent reports with location, location denied, photo attached and sent, offline failure with retry, live waveform from a fake microphone |
+| Supabase Storage adapter | **Not run**: needs a real Supabase project. Code follows the Storage REST API; verify by following the README switch steps |
+| Voice: record → upload → transcript in field | Passed in headless Chromium with a fake microphone and a stand-in transcriber (real WebM upload, real route) |
+| Groq Whisper live, through the browser | Passed: a real speech clip fed to Chromium's microphone was recorded, uploaded and transcribed correctly by `whisper-large-v3-turbo` |
+| Silence / non-speech | Quiet recordings are not uploaded (browser level check); Whisper courtesy hallucinations ("Grazie a tutti.", "Thank you.") are discarded server-side |
+| Full flow on the real server (Claude + Groq + SQLite) | Passed: transcription 200, report 201 with location, Claude reply in the chat |
+| Real typing (keyboard events) in Chromium and Firefox | Passed (mouse and touch focus, Italian accented characters, Enter to send) |
+| Real phone (iOS Safari, Android Chrome) | **Not run** |
 
-The user chose to finish with live Claude checks marked blocked. No routing accuracy is inferred from the fictional seeds, and no fake AI response was used in the app or tests.
+## What the automated tests cover
 
-## What the automated checks verify
+- Text, photo-only and denied-location reports; coordinate rounding; fallback replies in both languages.
+- Photos: resized to ≤ 1600 px, re-encoded, EXIF removed, served with the right type; a failed insert deletes the stored photo.
+- Rejections: empty reports, half or out-of-range coordinates, string coordinates, over-long text, unknown language, contact details and plates, fake or unsupported images, non-object bodies, cross-origin and non-JSON writes, malformed JSON, the per-client rate limit.
+- List/get/patch with limit validation, unknown and malformed ids, invalid statuses.
+- Static app served with CSP; `.env`, database, source and path-traversal attempts return 404.
+- Storage config: default driver, missing settings and unknown drivers fail at start.
+- Repository contract (SQLite always, Postgres on demand): defaults, round trip, ordering, limits, status updates, database-level constraints, idempotent migrations.
 
-- All 12 seeds conform to the report schema; railway lift and pothole route to the expected labels.
-- Descending urgency, responsible-body filtering, persisted overrides, original-score retention, and serialized concurrent writes.
-- Pages/assets are served, while `.env` and JSON storage are not public routes.
-- Invalid scores, missing reports, cross-origin mutations, missing privacy confirmation, obvious personal data, malformed images and invented draft tokens are rejected.
-- Low confidence, missing location, unknown competence and unanswered questions require clarification.
-- Real generated images resize to at most 1600 px and lose EXIF/ICC metadata. Fake image formats and oversized files are rejected.
-- Missing API credentials produce an explicit 503 error and no report.
+## Manual checks still worth doing on a phone
 
-## Finish live verification
-
-Set `ANTHROPIC_API_KEY` in local `.env`, ensure the configured `CLAUDE_MODEL` is available to that account, restart the app, then run:
-
-```bash
-npm run test:live
-npm run eval
-```
-
-Live flow tests use a temporary queue; they do not alter the demo queue. Evaluation uses actual Anthropic Messages calls and records per-case results in ignored `eval/results.json`.
-
-For manual browser verification, test the following with synthetic content:
-
-1. Submit a railway-lift description in Italian; review every field and both drafts, edit them, confirm, and save. Check it appears in the officer list.
-2. Switch to English; upload a photo without people/plates, enter a public pothole location, prepare and download the package. Verify that the recipient button stays disabled for `TODO_VERIFY`.
-3. Try a vague description. Confirm that questions appear and saving is unavailable until new information is provided.
-4. Dictate in both languages in a supported browser, stop recording, and check the transcript. Deny permission once and verify the typing fallback.
-5. Filter the officer table, override priority, refresh and confirm ordering/persistence.
-6. Navigate using Tab/Shift+Tab/Enter, turn on large text, and inspect at 200% zoom and a narrow mobile viewport. Check the skip link and focus styles.
-7. Load the optional map. Deny geolocation once on the citizen page and check the manual-address fallback.
-
-## Environment notes
-
-The execution sandbox could not access npm or maintain local HTTP listeners, so approved commands ran outside it. Sharp was updated to 0.35.5 following an npm advisory. This workstation's global libvips triggered native compilation; installation succeeded using `SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install`, which selects Sharp's prebuilt library. Ordinary installations can use `npm install` as documented.
+1. Send a text report and allow location: the receipt shows coordinates and accuracy, and the map link opens the right spot.
+2. Deny location: the report still saves and the receipt says why there is no position.
+3. Take a photo with the camera from the photo button; send it without text.
+4. Record in Italian and English; try cancel and done; deny the microphone once; record silence.
+5. Turn on airplane mode, send, then turn it off and press Retry.
+6. Use VoiceOver/TalkBack: replies and save states are announced; every button has a name.

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 10 54 56" fill="none">
+  <path stroke="none" d="M 59 49 V 25 C 59 20 55 18 50 18 H 27 C 22 18 18 20 18 25 V 56 C 18 61 22 63 27 63 H 46 V 54.5 C 46 51.5 48 49 51 49 H 59 Z" fill="currentColor" fill-opacity="0.08"/>
+  <path d="M 46 63 H 27 C 22 63 18 59 18 54 V 27 C 18 22 22 18 27 18 H 50 C 55 18 59 22 59 27 V 49 H 51 C 48 49 46 51.5 46 54.5 V 63 Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g class="corner-flap-group">
+    <path stroke="none" d="M 59 49 C 59 57.5 55 63 46 63 V 54.5 C 46 51.5 48 49 51 49 H 59 Z" fill="currentColor" fill-opacity="0.16"/>
+    <path d="M 59 49 C 59 57.5 55 63 46 63" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <g class="rings-group">
+    <line x1="26" y1="14" x2="26" y2="21" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <line x1="39" y1="14" x2="39" y2="21" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <line x1="52" y1="14" x2="52" y2="21" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g class="lines-group">
+    <line x1="28" y1="34" x2="49" y2="34" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <line x1="28" y1="46" x2="40" y2="46" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

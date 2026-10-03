@@ -2,9 +2,9 @@ node_modules/
 .env
 .env.*
 !.env.example
-data/reports.json
-data/*.tmp
-eval/results.json
+data/
+certs/
 test-results/
 *.log
 .DS_Store
+.impeccable/*.local.json

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notepad Icon</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #141724;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* Interactive Icon Wrapper */
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 24px;
+      border-radius: 28px;
+      cursor: pointer;
+      outline: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  filter 0.4s ease;
+    }
+
+    /* Hover Interaction: Float & Soft Shadow */
+    .icon-box:hover,
+    .icon-box.animating {
+      transform: translateY(-5px) scale(1.03) rotate(-1.5deg);
+      filter: drop-shadow(0 14px 20px rgba(20, 23, 36, 0.14));
+    }
+
+    /* Click / Active: Tactile Bounce */
+    .icon-box:active {
+      transform: translateY(-1px) scale(0.97) rotate(0deg);
+      filter: drop-shadow(0 4px 8px rgba(20, 23, 36, 0.1));
+      transition-duration: 0.1s;
+    }
+
+    .icon-box:focus-visible {
+      outline: 2px solid #d9a43a;
+      outline-offset: 6px;
+    }
+
+    /* SVG Base Geometry */
+    .notepad-icon {
+      width: 96px;
+      height: 102px;
+      display: block;
+      overflow: visible;
+      color: #141724;
+    }
+
+    .notepad-icon .pad-body,
+    .notepad-icon .corner-flap,
+    .notepad-icon .ring,
+    .notepad-icon .note-line {
+      stroke: currentColor;
+      stroke-width: 4px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .notepad-icon .pad-fill,
+    .notepad-icon .flap-fill {
+      fill: #ffffff;
+    }
+
+    /* 1. Sequential Note Lines Drawing */
+    .notepad-icon .line-top {
+      stroke-dasharray: 21;
+      stroke-dashoffset: 0;
+    }
+
+    .notepad-icon .line-bottom {
+      stroke-dasharray: 12;
+      stroke-dashoffset: 0;
+    }
+
+    .icon-box:hover .line-top,
+    .icon-box.animating .line-top {
+      animation: scribeLine 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    }
+
+    .icon-box:hover .line-bottom,
+    .icon-box.animating .line-bottom {
+      animation: scribeLine 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) 0.08s forwards;
+    }
+
+    @keyframes scribeLine {
+      0% {
+        stroke-dashoffset: 21;
+        opacity: 0.2;
+      }
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+    }
+
+    /* 2. Dog-Ear Corner Flex */
+    .notepad-icon .corner-flap-group {
+      transform-origin: 46px 63px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .icon-box:hover .corner-flap-group,
+    .icon-box.animating .corner-flap-group {
+      transform: scale(1.06) rotate(-3deg);
+    }
+
+    /* 3. Spiral Rings Spring */
+    .notepad-icon .ring {
+      transform-origin: center top;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .icon-box:hover .ring-1, .icon-box.animating .ring-1 { transform: translateY(-2.5px); transition-delay: 0.02s; }
+    .icon-box:hover .ring-2, .icon-box.animating .ring-2 { transform: translateY(-4px);   transition-delay: 0.06s; }
+    .icon-box:hover .ring-3, .icon-box.animating .ring-3 { transform: translateY(-2.5px); transition-delay: 0.10s; }
+
+    /* Minimal Hint & Copy Action */
+    .actions-wrap {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .copy-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      background: #141724;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Minimal Icon Container -->
+  <button class="icon-box" id="iconBtn" aria-label="Notepad Icon">
+    <svg class="notepad-icon" viewBox="0 0 82 87" fill="none" aria-hidden="true">
+      <!-- Solid paper background fill -->
+      <path class="pad-fill" stroke="none" d="M 59 49 V 25 C 59 20 55 18 50 18 H 27 C 22 18 18 20 18 25 V 56 C 18 61 22 63 27 63 H 46 V 54.5 C 46 51.5 48 49 51 49 H 59 Z" />
+
+      <!-- Outer notepad outline & inner fold crease in one continuous stroke -->
+      <path class="pad-body" d="M 46 63 H 27 C 22 63 18 59 18 54 V 27 C 18 22 22 18 27 18 H 50 C 55 18 59 22 59 27 V 49 H 51 C 48 49 46 51.5 46 54.5 V 63 Z" />
+
+      <!-- Curled corner flap (dog-ear) -->
+      <g class="corner-flap-group">
+        <path class="flap-fill" stroke="none" d="M 59 49 C 59 57.5 55 63 46 63 V 54.5 C 46 51.5 48 49 51 49 H 59 Z" />
+        <path class="corner-flap" d="M 59 49 C 59 57.5 55 63 46 63" />
+      </g>
+
+      <!-- Top spiral rings -->
+      <g class="rings-group">
+        <line class="ring ring-1" x1="26" y1="14" x2="26" y2="21" />
+        <line class="ring ring-2" x1="39" y1="14" x2="39" y2="21" />
+        <line class="ring ring-3" x1="52" y1="14" x2="52" y2="21" />
+      </g>
+
+      <!-- Note content lines -->
+      <g class="lines-group">
+        <line class="note-line line-top" x1="28" y1="34" x2="49" y2="34" />
+        <line class="note-line line-bottom" x1="28" y1="46" x2="40" y2="46" />
+      </g>
+    </svg>
+  </button>
+
+  <div class="actions-wrap">
+    <p class="hint">Hover or click to animate</p>
+    <button class="copy-btn" id="copyBtn">Copy SVG</button>
+  </div>
+
+  <div class="toast" id="toast">SVG copied to clipboard</div>
+
+  <script>
+    const iconBtn = document.getElementById('iconBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+
+    // Click / tap animation trigger (Icons8 style click response)
+    iconBtn.addEventListener('click', () => {
+      iconBtn.classList.remove('animating');
+      void iconBtn.offsetWidth; // trigger reflow
+      iconBtn.classList.add('animating');
+      setTimeout(() => iconBtn.classList.remove('animating'), 600);
+    });
+
+    // Copy SVG
+    copyBtn.addEventListener('click', () => {
+      const svg = iconBtn.querySelector('svg').outerHTML;
+      navigator.clipboard.writeText(svg).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      });
+    });
+  </script>
+
+</body>
+</html>

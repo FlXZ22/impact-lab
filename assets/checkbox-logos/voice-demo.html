@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Button — speech to text</title>
+<script src="voice-button.js"></script>
+<style>
+  body {
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+    background: #fafafa;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 24px;
+    padding: 48px 56px;
+    display: grid;
+    justify-items: center;
+    gap: 24px;
+  }
+  h1 { font-size: 20px; margin: 0; }
+  voice-button { --vb-size: 120px; }
+  .status { font-size: 15px; color: #888; min-height: 1.4em; transition: color .25s; }
+  .status.on { color: #FF453A; }
+  .hint { font-size: 13px; color: #bbb; max-width: 280px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Speech to text</h1>
+    <voice-button id="mic"></voice-button>
+    <div class="status" id="status">Tap the button to speak</div>
+    <div class="hint" id="hint">Uses your microphone if allowed — otherwise a simulated waveform plays.</div>
+  </div>
+
+  <script>
+    const mic = document.getElementById('mic');
+    const status = document.getElementById('status');
+    mic.addEventListener('voicestart', () => {
+      status.textContent = 'Listening…';
+      status.classList.add('on');
+    });
+    mic.addEventListener('voicestop', () => {
+      status.textContent = 'Tap the button to speak';
+      status.classList.remove('on');
+    });
+
+    // ?autostart = start in synthetic mode on load (for previews without mic)
+    if (location.search.includes('autostart')) {
+      mic.listening = true;   // visual only, no mic prompt
+    }
+  </script>
+</body>
+</html>

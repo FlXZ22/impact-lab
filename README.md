@@ -1,96 +1,140 @@
 # SegnalaMi
 
-A working, local hackathon prototype that helps people describe barriers to Milan’s services and prepare a report for the right recipient. People who use wheelchairs, have low vision, are older, cannot hear announcements, or do not speak Italian can face both a physical barrier and a confusing reporting process.
+Report an accessibility barrier in Milan by chatting: type a sentence, record it in any language (transcribed by Whisper on Groq, language auto-detected), or send a photo. When you send, the app asks the browser for your location and saves the report with coordinates, or without them if you decline. Claude, when configured, answers with a short acknowledgement.
 
-SegnalaMi accepts a description in Italian or English, an optional photo, and an optional public problem location. Claude turns these into an editable report with a suggested recipient, priority, explanation, and messages in both languages. The citizen chooses whether and how to send it. The officer page shows the local queue sorted by urgency.
+**This is a prototype, not an official City of Milan service. Reports are not sent to any authority and are not monitored for emergencies. Use fictional incidents for demos.**
 
-**This is not an official City service. It never sends reports to an authority. No accounts, names or contact fields. Use fictional incidents for a public demo.**
+## Run it
 
-## Run locally
-
-Requires Node.js 22.9+ and npm, an Anthropic API key with model access, and internet access for Claude. No build step.
+Requires Node.js 22.18+ (it runs TypeScript and SQLite natively, no build step).
 
 ```bash
 npm install
-cp .env.example .env
-# Edit .env locally and set ANTHROPIC_API_KEY. Never commit or share it.
-npm start
+cp .env.example .env        # optional: ANTHROPIC_API_KEY (AI replies), GROQ_API_KEY (voice)
+npm start                   # http://127.0.0.1:3000
 ```
 
-Open **http://127.0.0.1:3000/** for citizens and **http://127.0.0.1:3000/officer** for officers. `npm run dev` restarts on source changes. Restart after changing `.env`. The app starts without a key so you can inspect the interface and seeded queue, but report preparation explicitly fails; there is no mock mode.
+With no configuration at all, reports go to `data/segnalami.db` (SQLite) and photos to `data/uploads/`. Both are created on first start and ignored by git.
 
-Environment variables:
+| Script | What it does |
+| --- | --- |
+| `npm start` / `npm run dev` | Serve the app (`dev` restarts on changes) |
+| `npm test` | API and repository tests (Postgres contract runs when `TEST_DATABASE_URL` is set) |
+| `npm run typecheck` | `tsc --strict` over the server (`.ts`) and the browser code (JSDoc-typed `.js`) |
+| `npm run check` | Both of the above |
 
-| Variable | Default | Purpose |
+If the page shows "the running server is an old version", or sending and voice fail right after an update, stop the server (Ctrl+C) and run `npm start` again: an old process keeps serving the old API.
+
+Geolocation and the microphone need a secure context: `http://127.0.0.1` / `localhost` works; anything else needs HTTPS.
+
+## How a report flows
+
+1. The person types, records a voice message, or picks a photo. Recordings (MediaRecorder, WebM/Opus or MP4 on Safari, max 2 minutes) are uploaded to `POST /api/transcriptions`, sent to Groq Whisper (`whisper-large-v3-turbo`), and the text lands in the field for review before sending. Whisper's typical silence captions ("Sottotitoli creati dalla comunità Amara.org", "Thank you.") are discarded. Photos are downscaled and re-encoded in the browser, which also drops EXIF/GPS metadata.
+2. On send, the browser is asked for its position. Denial, timeout (12 s, including an ignored permission prompt) or missing support never block: the report is sent with `latitude`/`longitude` set to `null`.
+3. The server validates the input, rejects obvious contact details and number plates, re-sanitizes the photo with `sharp` (orientation, max 1600 px, metadata stripped), stores it, and inserts the row. If the insert fails, the stored photo is removed.
+4. Claude (`claude-opus-5` by default, low effort, 20 s budget) writes a one- or two-sentence acknowledgement. Without a key, when overloaded or on any API error, a fixed bilingual confirmation is used. The report is already saved either way.
+5. The chat shows a receipt under the message: short report number, coordinates (linked to OpenStreetMap) with accuracy, and time. Failed sends keep their draft in memory and offer Retry.
+
+## Data model
+
+| Column | Type | Notes |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | required for AI | Read only on the server |
-| `CLAUDE_MODEL` | `claude-sonnet-5-5` | Exact Anthropic model ID; configure a model available to your account |
-| `HOST` | `127.0.0.1` | Local interface |
-| `PORT` | `3000` | HTTP port |
-| `REPORTS_FILE` | `data/reports.json` | JSON queue, created from 12 seeds on first start |
+| `id` | uuid / text | Generated |
+| `content_text` | text, ≤ 2000 | Null for photo-only reports |
+| `image_url` | text | `/uploads/<uuid>.jpg` locally, public Storage URL on Supabase |
+| `latitude`, `longitude` | double | Both null or both set; range-checked |
+| `status` | `open` \| `received` \| `in_progress` \| `resolved` | Default `open`; history in `report_status_events` |
+| `created_at` | timestamptz / ISO text | Default now |
 
-The requested default model is used exactly, without silent fallback. Invalid model access, authentication, network, rate-limit and schema errors surface as errors. The no-account officer view is intended for a **trusted local demo**: anyone who can access this server can view the queue and change urgency. Do not expose it as an unrestricted public service. JSON storage supports one server process, with serialized atomic writes.
+The database enforces the same rules the API checks: there must be text or a photo, and coordinates come in pairs. Schemas live in `db/sqlite/` and `db/postgres/` as numbered migrations, applied automatically on start and tracked in `schema_migrations`.
 
-## Where does Claude work?
+## API
 
-**Model and API.** `lib/claude.js` calls `https://api.anthropic.com/v1/messages` server-side using `ANTHROPIC_API_KEY` and `CLAUDE_MODEL` (default `claude-sonnet-5-5`). The front end never receives the key. Requests use a named `prepare_report` tool, `tool_choice`, and a JSON Schema; Ajv validates every response before it is used. This follows Anthropic’s [tool definition documentation](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) and [Messages API](https://platform.claude.com/docs/en/api/http/messages). The tool is a structured output contract; it performs no delivery action.
+| Method | Path | Body / query | Result |
+| --- | --- | --- | --- |
+| `POST` | `/api/reports` | `{ text?, image?: { media_type, data(base64) }, latitude?, longitude?, language: 'it'\|'en' }` | `201 { report, reply }` |
+| `GET` | `/api/reports` | `?limit=1..200` (default 50) | Newest first |
+| `GET` | `/api/reports/progress` | `?ids=id1,id2` | Status + timeline per report |
+| `GET` | `/api/reports/:id` | | One report |
+| `PATCH` | `/api/reports/:id` | `{ status }` | Updated report |
+| `POST` | `/api/transcriptions` | raw audio body (`audio/webm`, `audio/mp4`, `audio/ogg`, …, ≤ 10 MB), `?language=it\|en` | `{ text }` |
+| `GET` | `/api/config` | | `{ assistant, transcription, maxTextLength }` |
 
-**Prompts.** The full system prompt is exported as `SYSTEM_PROMPT` in `lib/claude.js`. It defines the six recipient labels, a 1–5 urgency rubric, evidence-based explanations, privacy handling, bilingual drafts, and clarification behavior. Citizen text and images are treated as untrusted evidence. Input includes the description, language, public location, and optional cleaned image. No retrieved contacts, accounts or hidden user profiles are used.
+Writes must be same-origin JSON (audio for transcriptions). Report creation is limited to 12 and transcription to 30 per client per minute. Errors are `{ code, message }`. There is no authentication: anyone who can reach the server can list reports and change statuses, so keep it on a trusted network or put it behind auth before exposing it.
 
-**Claude decides:** category, short description, location text, affected groups, urgency score and reason, proposed competence, confidence, missing questions, and the Italian/English message drafts. The tool also returns a personal-data flag. Candidate recipients are `comune_di_milano`, `atm`, `trenord_rfi`, `green_space_operator`, `local_police`, and `unknown`. The combined railway label does not assert which railway entity owns a particular asset.
+## Report status: what the citizen sees
 
-**Clarifications.** Confidence below 0.7, unknown competence, a blank location, or any missing question prevents a ready-to-send package and local saving. The user adds answers to the description and calls Claude again. The server independently enforces this gate, including against the original draft. Claude never gets replaced by routing rules at runtime.
+Every report moves through four steps, and each change is recorded with its time in `report_status_events`:
 
-**Humans confirm:** the facts, location, affected groups, recipient, priority, reason, both messages and absence of personal data. Every visible report field can be edited. Confidence and missing questions remain the model’s assessment. Field edits do not automatically rewrite the message drafts; the interface says to update both. Saving explicitly adds the reviewed report to the local prototype queue, without contacting an authority. A second Claude `check_privacy` tool call screens the edited package before JSON storage. Officers can override urgency while the original score and reason remain recorded.
+| `status` | Step shown to the citizen (IT / EN) | Who sets it |
+| --- | --- | --- |
+| `open` | Inviata / Sent | automatically on creation |
+| `received` | Consegnata al Comune / Delivered to the City | City dashboard |
+| `in_progress` | Presa in carico / In progress | City dashboard |
+| `resolved` | Risolta / Resolved | City dashboard |
 
-**Sending.** Copy/download works without a configured recipient. `channels.json` contains only `TODO_VERIFY` contacts. The recipient button is disabled until a maintainer verifies a real channel, sets `verified: true`, and replaces `value` with an HTTPS URL (`link`), bare email address (`mailto`), or phone number (`tel`). Restart after editing. Scheme validation prevents unsafe links. Opening a mail client prepares its message; the citizen still presses Send. The server contains no mail, SMS or organization-submission integration.
+- **City dashboard → status:** `PATCH /api/reports/:id` with `{ "status": "received" }` (etc.). Setting the same status twice records nothing; moving backwards (reopening) is allowed and shown.
+- **Citizen → progress:** `GET /api/reports/progress?ids=a,b,c` (≤ 50) returns `[{ id, status, timeline: [{ status, at }] }]`, never the report content. The page polls it every 30 s while visible.
+- The citizen page remembers the reports sent from that device (localStorage) and shows them under **Le mie segnalazioni**, with a compact four-dot tracker under each message in the chat.
 
-## Accessibility and input modes
+## Architecture
 
-- Semantic HTML, explicit labels, keyboard controls, skip link, visible focus, readable contrast, large-text toggle, live status announcements, and responsive layouts.
-- Italian/English UI; both message drafts are always available. Model-generated report fields use the language selected when preparing; switching UI language does not retranslate existing data.
-- Optional JPEG/PNG/WebP photo up to 4 MB and 25 million decoded pixels. The server decodes, re-encodes and strips metadata before sending to Claude. Text remains required to give context.
-- Web Speech API uses `it-IT` or `en-US`. Start/stop is explicit and permission errors are explained. Unsupported browsers offer typing. Browser dictation may use the browser vendor’s service; no audio goes to this app server. Microphone/geolocation require browser permission and a secure context (localhost qualifies).
-- Geolocation is optional, rounded to roughly 100 m and inserted as editable coordinates. Use it only at the public problem location. It is not stored separately as a user location.
-- The Leaflet/OpenStreetMap map loads only on request. The table remains usable without map tiles. Only supplied coordinates and explicitly fictional seed coordinates appear; addresses are not guessed or geocoded. Tile requests go directly to OpenStreetMap.
-
-## Privacy and storage
-
-Raw descriptions and photos are not written to disk or logged. Structured anonymous drafts stay in process memory for up to 30 minutes, with an enforced expiry on access and lazy eviction on preparation. A maximum of 100 drafts is retained. Only explicitly reviewed reports enter `data/reports.json`. File storage, `.env`, evaluation results, and test output are gitignored. Language and large-text preferences are the only values in browser localStorage.
-
-The form asks users not to include names, contact details, faces or number plates. Obvious contact/plate patterns are rejected before Claude; Claude flags other identifying information in input and checks edited packages before saving. Personal data must be removed and the request retried. These checks are a prototype safeguard, not a guarantee of perfect detection; use synthetic data for demos. Submitted input is processed by Anthropic, whose own API retention settings apply. The app’s no-storage claim concerns local raw input, not third-party retention.
-
-The API uses JSON-only mutations, same-origin checks, a 6 MB request limit, three concurrent AI calls, timeouts, schema validation, and safe DOM text rendering. It has no authentication by design. Before deployment, a real service would need access controls, retention policy, verified routing/contact information, abuse protection and a privacy review.
-
-## Data and tests
-
-`data/seeds.json` contains **12 fictional reports**, including a broken railway lift routed to `trenord_rfi` and a pothole routed to `comune_di_milano`. They are visibly labelled as examples, not model outputs. The runtime never uses the seeds as AI answers. To start a fresh demo without deleting your queue, set `REPORTS_FILE` to a new filename.
-
-```bash
-npm test          # Offline HTTP, schema, privacy gates, sorting and persistence
-npm run test:live # Real Claude text + photo flows, officer override, clarification
-npm run eval      # 15 real Claude routing calls; prints accuracy and failures
+```
+server.ts                 entry: config → storage → assistant → HTTP
+src/app.ts                routes, security headers, error mapping
+src/domain/               Report types, validation, personal-data guard
+src/repository/types.ts   ReportRepository: the storage contract
+src/repository/sqlite.ts  default adapter (node:sqlite)
+src/repository/postgres.ts PostgreSQL / Supabase adapter (pg)
+src/storage/              ImageStore contract + local disk and Supabase Storage adapters,
+                          and createStorage(): the only file that knows concrete adapters
+src/assistant.ts          best-effort Claude reply with fallback
+src/transcription/        Transcriber contract + Groq Whisper adapter
+public/                   static client: app.js orchestrates js/chat-stream.js,
+                          js/input-dock.js, js/voice.js, js/listening-indicator.js, js/geo.js, js/photo.js
 ```
 
-`eval/cases.json` contains 15 synthetic cases with expected competence, including deliberately ambiguous reports. `eval/run.js` uses the same production prompt and schema. It prints per-case expected/actual routing, accuracy among completed calls, completion rate, and end-to-end correct/15. It saves details to ignored `eval/results.json`; missing keys or API errors are explicitly reported and never count as successful predictions. API calls incur charges. The script exits nonzero for errors or routing mismatches.
+Routes depend on the `ReportRepository` and `ImageStore` interfaces only. Switching engines is a single environment variable, `STORAGE_DRIVER`:
 
-Offline tests make no fake Claude responses. Live flow checks start an isolated temporary JSON queue and remove it afterward. The three flows are (1) text → Claude → review/save → officer queue, (2) photo plus text through the same path, and (3) officer filtering → urgency override → reordering/persistence. A fourth check verifies clarification on ambiguous input. Actual microphone transcription needs a microphone-enabled browser and a person speaking; a transcript-only HTTP test is not proof that speech recognition works.
+| `STORAGE_DRIVER` | Reports | Photos | Needs |
+| --- | --- | --- | --- |
+| `local` (default) | SQLite file | `data/uploads` | nothing |
+| `postgres` | any PostgreSQL 13+ | `data/uploads` | `DATABASE_URL` |
+| `supabase` | Supabase Postgres | Supabase Storage | `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 
-See `TESTING.md` for the checks and results from this build.
+Adding another engine means one class implementing `ReportRepository` and one `case` in `src/storage/index.ts`.
 
-## Project layout
+## Voice transcription (Groq)
 
-```text
-server.js              Express routes, validation, temporary drafts
-lib/claude.js          Anthropic Messages calls and prompts
-lib/schema.js          Structured report schema and clarification gates
-lib/store.js           Serialized, atomic JSON storage
-public/                Plain HTML/CSS/JS; citizen and officer pages
-channels.json          Verified-channel configuration (TODO_VERIFY initially)
-data/seeds.json        12 fictional examples
-eval/                  15-case live routing evaluation
-scripts/live-flows.js  Live end-to-end checks with isolated storage
-test/                  Offline tests without simulated AI
-```
+1. Create a key at console.groq.com → API Keys.
+2. In `.env`: `GROQ_API_KEY=gsk_…` (optionally `GROQ_WHISPER_MODEL=whisper-large-v3` for maximum accuracy instead of the faster turbo model).
+3. Restart. The log shows `transcription: groq whisper-large-v3-turbo`.
 
-MIT licensed. Built in stages: core text/report/officer flow, photo input, voice dictation, then optional map. No build tooling or client AI SDK.
+## Switching to Supabase
+
+1. **Create a project** at supabase.com and note its reference (`https://<project-ref>.supabase.co`).
+2. **Get the connection string:** Dashboard → Connect → *Session pooler* (IPv4-friendly). It looks like
+   `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`.
+3. **Get the TLS certificate:** Dashboard → Database → Settings → SSL Configuration → *Download certificate*. Save it as `certs/supabase-ca.crt` (git-ignored). The adapter always verifies hosted servers. As a quick start only, you can append `?sslmode=no-verify` to `DATABASE_URL` instead, which encrypts without verifying the server.
+4. **Get the service role key:** Dashboard → Project Settings → API keys → `service_role` (secret). It stays on the server and is used only for Storage uploads.
+5. **Configure `.env`:**
+   ```bash
+   STORAGE_DRIVER=supabase
+   DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+   DATABASE_CA_CERT=certs/supabase-ca.crt
+   SUPABASE_URL=https://<project-ref>.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=<service_role key>
+   SUPABASE_BUCKET=report-images
+   ```
+6. **Start:** `npm start`. On boot the adapter applies `db/postgres/*.sql` (under an advisory lock, so several instances can start at once) and creates the public `report-images` bucket if it does not exist (JPEG only, 5 MB cap). The log shows `storage: supabase`.
+
+To manage the schema yourself instead, run `psql "$DATABASE_URL" -f db/postgres/001_create_reports.sql` or paste it into the SQL Editor. The startup migration then sees the table and skips it. The table has row-level security enabled with no policies, so Supabase's public `anon` key cannot read or write reports; only the server's direct connection can. Photo URLs are public but unguessable (UUIDs), and their metadata is stripped.
+
+Existing SQLite data is not migrated automatically. For a demo database, export with `sqlite3 data/segnalami.db -csv -header "select * from reports"` and import the CSV in the Supabase Table Editor. Local photos would need re-uploading.
+
+## Accessibility and privacy
+
+- Every control works by keyboard and has a label; new replies, save/fail states and transcription are announced through one polite live region; Escape cancels a recording; touch targets are at least 44 px; text scales with browser settings; reduced motion is respected; light and dark themes follow the system.
+- No accounts, names or contact fields. The conversation lives in the tab (`sessionStorage`) and is gone when the tab closes.
+- Voice recordings pass through this server to Groq for transcription and are never stored; only the text you then choose to send is saved. Without `GROQ_API_KEY` the microphone says transcription is off and everything else works.
+- To swap Groq for another speech-to-text service, implement `Transcriber` (`src/transcription/types.ts`) and change the one line in `server.ts` that creates it.
