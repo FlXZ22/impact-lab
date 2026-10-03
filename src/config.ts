@@ -22,6 +22,11 @@ export interface AssistantConfig {
   model: string;
 }
 
+export interface RoutingConfig {
+  /** The segnalazioni_ai dispatch service. Null disables routing entirely. */
+  baseUrl: string | null;
+}
+
 export interface TranscriptionConfig {
   groqApiKey: string | null;
   model: string;
@@ -33,6 +38,7 @@ export interface AppConfig {
   storage: StorageConfig;
   assistant: AssistantConfig;
   transcription: TranscriptionConfig;
+  routing: RoutingConfig;
 }
 
 type Env = Record<string, string | undefined>;
@@ -94,6 +100,18 @@ export function loadConfig(env: Env = process.env): AppConfig {
     port,
     storage: loadStorageConfig(env),
     assistant: { apiKey: value(env, 'ANTHROPIC_API_KEY') ?? null, model: value(env, 'CLAUDE_MODEL') ?? 'claude-opus-5' },
-    transcription: { groqApiKey: value(env, 'GROQ_API_KEY') ?? null, model: value(env, 'GROQ_WHISPER_MODEL') ?? 'whisper-large-v3-turbo' }
+    transcription: { groqApiKey: value(env, 'GROQ_API_KEY') ?? null, model: value(env, 'GROQ_WHISPER_MODEL') ?? 'whisper-large-v3-turbo' },
+    routing: { baseUrl: loadRoutingUrl(env) }
   };
+}
+
+/** A typo'd URL would otherwise fail silently on every single report, so fail at boot instead. */
+function loadRoutingUrl(env: Env): string | null {
+  const raw = value(env, 'ROUTING_URL');
+  if (!raw) return null;
+  try {
+    return new URL(raw).toString();
+  } catch {
+    throw new ConfigError(`ROUTING_URL must be a valid URL; got "${raw}".`);
+  }
 }

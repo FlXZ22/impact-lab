@@ -6,6 +6,7 @@ import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import sharp from 'sharp';
 import { createApp } from '../src/app.ts';
+import { createRouter } from '../src/routing.ts';
 import { createAssistant, fallbackReply } from '../src/assistant.ts';
 import { ConfigError, loadStorageConfig } from '../src/config.ts';
 import { containsObviousPersonalData } from '../src/domain/privacy.ts';
@@ -34,7 +35,7 @@ let close: () => Promise<void>;
 before(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'segnalami-test-'));
   storage = await createStorage({ driver: 'local', sqlitePath: path.join(dir, 'test.db'), uploadsDir: path.join(dir, 'uploads') });
-  const server = createApp({ storage, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, reportsPerMinute: 1000 }).listen(0, '127.0.0.1');
+  const server = createApp({ storage, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, router: createRouter({ baseUrl: null }), reportsPerMinute: 1000 }).listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   close = () => new Promise(resolve => server.close(() => resolve()));
@@ -278,7 +279,7 @@ describe('safety check', () => {
 describe('rate limiting', () => {
   test('caps report creation per client', async () => {
     const limited = await createStorage({ driver: 'local', sqlitePath: ':memory:', uploadsDir: path.join(dir, 'limited') });
-    const server = createApp({ storage: limited, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, reportsPerMinute: 2 }).listen(0, '127.0.0.1');
+    const server = createApp({ storage: limited, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, router: createRouter({ baseUrl: null }), reportsPerMinute: 2 }).listen(0, '127.0.0.1');
     await new Promise(resolve => server.once('listening', resolve));
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/reports`;
     try {
@@ -325,5 +326,135 @@ describe('units', () => {
     for (const file of ['db/sqlite/001_create_reports.sql', 'db/postgres/001_create_reports.sql']) {
       assert.match(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'), /CREATE TABLE IF NOT EXISTS/);
     }
+  });
+});
+
+/**
+ * The seam to the segnalazioni_ai dispatch service. A stub HTTP server stands in for it,
+ * so the real fetch, URL building and request mapping are exercised rather than mocked out.
+ */
+describe('routing to the responsible body', () => {
+  /** Bodies the stub received, so the outbound mapping can be asserted. */
+  let received: Array<Record<string, unknown>> = [];
+  let stub: import('node:http').Server;
+  let stubUrl: string;
+  let routedBase: string;
+  let closeRouted: () => Promise<void>;
+  let failure = false;
+
+  const atmResponse = {
+    reportId: '317a25b0-0905-4468-be76-34a2b370f8a3',
+    status: 'AWAITING_CITIZEN_ACTION',
+    analysis: { category: 'TRASPORTO_PUBBLICO', severity: 'ROUTINE', confidence: 0.9, location: 'stazione M3 Lodi' },
+    nextStep: {
+      agencyId: 'atm',
+      channel: 'WEB_FORM',
+      action: 'SUBMIT_FORM',
+      message: "Questa segnalazione e' di competenza di ATM — Azienda Trasporti Milanesi.",
+      deeplink: 'https://www.atm.it/it/AtmNews/Pagine/Contatti.aspx',
+      prefilledText: 'Ascensore fuori servizio.',
+      reference: null,
+      attachmentIds: [],
+      extra: {}
+    }
+  };
+
+  before(async () => {
+    const http = await import('node:http');
+    stub = http.createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on('data', c => chunks.push(c));
+      req.on('end', () => {
+        received.push(JSON.parse(Buffer.concat(chunks).toString()));
+        if (failure) {
+          res.writeHead(500).end('{}');
+          return;
+        }
+        res.writeHead(201, { 'content-type': 'application/json' }).end(JSON.stringify(atmResponse));
+      });
+    });
+    await new Promise<void>(resolve => stub.listen(0, '127.0.0.1', resolve));
+    stubUrl = `http://127.0.0.1:${(stub.address() as AddressInfo).port}`;
+
+    const routedStorage = await createStorage({ driver: 'local', sqlitePath: ':memory:', uploadsDir: path.join(dir, 'routed') });
+    const server = createApp({
+      storage: routedStorage,
+      assistant: createAssistant({ apiKey: null, model: 'unused' }),
+      transcriber: fakeTranscriber,
+      router: createRouter({ baseUrl: stubUrl }),
+      reportsPerMinute: 1000
+    }).listen(0, '127.0.0.1');
+    await new Promise(resolve => server.once('listening', resolve));
+    routedBase = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    closeRouted = () => new Promise(resolve => server.close(() => resolve()));
+  });
+
+  after(async () => {
+    await closeRouted();
+    await new Promise<void>(resolve => stub.close(() => resolve()));
+  });
+
+  const post = (base: string, body: unknown) =>
+    fetch(`${base}/api/reports`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  test('a metro-lift report comes back with ATM as the responsible body', async () => {
+    received = [];
+    const response = await post(routedBase, {
+      text: "L'ascensore della stazione M3 Lodi e' rotto da giorni",
+      latitude: 45.449,
+      longitude: 9.209
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+
+    assert.equal(body.nextStep.action, 'SUBMIT_FORM');
+    assert.equal(body.nextStep.agencyId, 'atm');
+    assert.equal(body.nextStep.category, 'TRASPORTO_PUBBLICO');
+    assert.match(body.nextStep.message, /ATM/);
+    assert.ok(body.nextStep.deeplink.startsWith('https://'));
+
+    // The outbound mapping: text forwarded, Milan coordinates kept, no contact invented.
+    assert.equal(received.length, 1);
+    assert.match(String(received[0]?.text), /ascensore/);
+    assert.equal(received[0]?.latitude, 45.449);
+    assert.equal('contact' in (received[0] ?? {}), false);
+  });
+
+  test('coordinates outside Milan are omitted rather than rejected', async () => {
+    received = [];
+    // Rome. The dispatch service would 400 on these, so they must not be forwarded.
+    const response = await post(routedBase, { text: 'Ascensore rotto in stazione', latitude: 41.9, longitude: 12.5 });
+    assert.equal(response.status, 201);
+    assert.equal(received.length, 1);
+    assert.equal('latitude' in (received[0] ?? {}), false);
+    assert.equal('longitude' in (received[0] ?? {}), false);
+  });
+
+  test('the report still saves when the dispatch service fails', async () => {
+    failure = true;
+    try {
+      const response = await post(routedBase, { text: 'Ascensore rotto alla stazione Centrale' });
+      assert.equal(response.status, 201);
+      const body = await response.json();
+      assert.ok(body.report.id, 'the report must be saved regardless');
+      assert.equal(body.nextStep, null, 'no next step, and no error shown to the citizen');
+    } finally {
+      failure = false;
+    }
+  });
+
+  test('a photo-only report never reaches the dispatch service', async () => {
+    received = [];
+    const image = { media_type: 'image/jpeg' as const, data: (await sharp({ create: { width: 8, height: 8, channels: 3, background: '#888' } }).jpeg().toBuffer()).toString('base64') };
+    const response = await post(routedBase, { image });
+    assert.equal(response.status, 201);
+    assert.equal(received.length, 0, 'blank text would be rejected upstream, so it is not sent');
+  });
+
+  test('a router with no base URL is disabled and yields nothing', async () => {
+    const off = createRouter({ baseUrl: null });
+    assert.equal(off.enabled, false);
+    const report = { id: 'x', content_text: 'ascensore rotto', image_url: null, latitude: null, longitude: null, status: 'open' as const, created_at: '' };
+    assert.equal(await off.route({ report }), null);
   });
 });

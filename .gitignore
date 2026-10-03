@@ -8,3 +8,5 @@ test-results/
 *.log
 .DS_Store
 .impeccable/*.local.json
+
+.demo-logs/
