@@ -1120,3 +1120,18 @@ label.ghost-button:focus-within {
     border: 1px solid CanvasText;
   }
 }
+
+/* The "who handles this" card under a saved report. Reuses .receipt wholesale; only
+   the separation from the receipt above it and the emergency colour are new. */
+.next-step {
+  margin-top: 2px;
+}
+
+.next-step .is-note {
+  color: var(--muted);
+}
+
+.next-step.is-emergency .receipt-state {
+  color: var(--danger);
+  font-weight: 600;
+}

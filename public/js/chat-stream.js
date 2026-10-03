@@ -1,4 +1,4 @@
-/** @import { AssistantMessage, ChatMessage, ReportProgress, UserMessage } from './types.js' */
+/** @import { AssistantMessage, ChatMessage, ReportProgress, RoutingNextStep, UserMessage } from './types.js' */
 import { locale, t } from './i18n.js';
 import { renderCompactSteps } from './status-steps.js';
 
@@ -168,7 +168,40 @@ export class ChatStream {
       button.addEventListener('click', () => this.#onOpenStatus(reportId));
       item.append(button);
     }
+    // Truthiness, not !== null: messages saved before routing existed have no such field.
+    if (message.state === 'saved' && message.routing) item.append(this.#renderNextStep(message.routing));
     return item;
+  }
+
+  /**
+   * Who is responsible for this report, and the one action the citizen can take.
+   * Nothing here was transmitted by us, and the card says so: the public bodies in
+   * question have no API, so the last step is the person's to take.
+   * @param {RoutingNextStep} step
+   */
+  #renderNextStep(step) {
+    const strings = t();
+    const emergency = step.action === 'CALL_EMERGENCY';
+    const card = el('div', `receipt next-step${emergency ? ' is-emergency' : ''}`);
+
+    card.append(el('span', 'receipt-state', emergency ? strings.nextStep.titleEmergency : strings.nextStep.title));
+    card.append(el('span', 'receipt-detail', step.message));
+
+    const label = strings.nextStep.actions[step.action];
+    if (step.deeplink && label) {
+      const link = el('a', 'receipt-retry');
+      link.href = step.deeplink;
+      if (step.deeplink.startsWith('http')) {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+      link.append(icon('i-send', 'icon small'), el('span', '', label));
+      card.append(link);
+    }
+
+    // Only claim nothing was sent when nothing was: NONE means the service delivered it.
+    if (step.action !== 'NONE') card.append(el('span', 'receipt-detail is-note', strings.nextStep.note));
+    return card;
   }
 
   /**

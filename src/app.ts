@@ -12,11 +12,14 @@ import { LOCAL_UPLOADS_ROUTE } from './storage/local.ts';
 import type { Storage } from './storage/index.ts';
 import { SUPPORTED_AUDIO_TYPES } from './transcription/groq.ts';
 import type { Transcriber } from './transcription/types.ts';
+import type { Router } from './routing.ts';
 
 export interface AppDependencies {
   storage: Storage;
   assistant: Assistant;
   transcriber: Transcriber;
+  /** Names the responsible public body. Optional half: a disabled router simply yields no next step. */
+  router: Router;
   /** Reports per client per minute. */
   reportsPerMinute?: number;
   assessor?: Pick<Assessor,'enabled'|'model'>;
@@ -40,7 +43,7 @@ export const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 /** Bumped when the client/server contract changes; the page warns when it talks to an older server. */
 export const API_VERSION = 2;
 
-export function createApp({ storage, assistant, transcriber, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
+export function createApp({ storage, assistant, transcriber, router, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
   const app = express();
   const imgSources = ["'self'", 'data:', 'blob:', storage.images.publicOrigin].filter(Boolean).join(' ');
 
@@ -114,8 +117,13 @@ export function createApp({ storage, assistant, transcriber, reportsPerMinute = 
       throw new AppError(503, 'STORAGE_ERROR', 'The report could not be saved. Please try again.', { cause: error });
     }
 
-    const reply = await assistant.reply({ report, language: input.language, photo });
-    res.status(201).json({ report, reply });
+    // Run together so the citizen waits for the slower of the two, not for both in turn.
+    // router.route never rejects, so a dead dispatch service cannot fail the request.
+    const [reply, nextStep] = await Promise.all([
+      assistant.reply({ report, language: input.language, photo }),
+      router.route({ report })
+    ]);
+    res.status(201).json({ report, reply, nextStep });
   });
 
   app.get('/api/reports', async (req, res) => {

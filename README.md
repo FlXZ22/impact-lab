@@ -4,6 +4,8 @@ Report an accessibility barrier in Milan by chatting: type a sentence, record it
 
 **This is a prototype, not an official City of Milan service. Reports are not sent to any authority and are not monitored for emergencies. Use fictional incidents for demos.**
 
+With `ROUTING_URL` set, the chat additionally tells you **which body is responsible** and gives you a one-tap action. It still sends nothing on your behalf — no public body in Milan offers an interface to send to.
+
 ## Run it
 
 Requires Node.js 22.18+ (it runs TypeScript and SQLite natively, no build step).
