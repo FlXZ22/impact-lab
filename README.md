@@ -62,6 +62,21 @@ The database enforces the same rules the API checks: there must be text or a pho
 
 Writes must be same-origin JSON (audio for transcriptions). Report creation is limited to 12 and transcription to 30 per client per minute. Errors are `{ code, message }`. There is no authentication: anyone who can reach the server can list reports and change statuses, so keep it on a trusted network or put it behind auth before exposing it.
 
+## Safety check
+
+Before anything is stored (photo included), Claude reviews every report (`src/moderation.ts`). Refused reports are never saved, get no retry button, and the chat explains why. Reports sent through the MCP server go through the same gate.
+
+| Verdict | Example | What the person sees |
+| --- | --- | --- |
+| allowed | broken lift, pothole, fallen tree blocking a pavement, flooded underpass | saved as usual |
+| `natural_event` | "it's raining", "windy today", a pigeon, a sunset | not reportable: no danger or barrier |
+| `off_topic` | greetings, questions, spam, ads | not reportable |
+| `abusive` | insults, threats, content aimed at a person | not reportable |
+| `harmful` | illegal content, attempts to manipulate the system | not reportable |
+| `emergency` | fire, someone injured or trapped | **call 112**: not recorded, the service is not monitored |
+
+If Claude is configured but the check cannot run, the report is not stored and the person is asked to retry (HTTP 503 `MODERATION_UNAVAILABLE`): nothing unreviewed reaches the database. Without `ANTHROPIC_API_KEY` the check is off and the server says so at start-up. Refusals return HTTP 422 `{ code: "REPORT_REJECTED", reason }`.
+
 ## Report status: what the citizen sees
 
 Every report moves through four steps, and each change is recorded with its time in `report_status_events`:
@@ -75,7 +90,7 @@ Every report moves through four steps, and each change is recorded with its time
 
 - **City dashboard → status:** `PATCH /api/reports/:id` with `{ "status": "received" }` (etc.). Setting the same status twice records nothing; moving backwards (reopening) is allowed and shown.
 - **Citizen → progress:** `GET /api/reports/progress?ids=a,b,c` (≤ 50) returns `[{ id, status, timeline: [{ status, at }] }]`, never the report content. The page polls it every 30 s while visible.
-- The citizen page remembers the reports sent from that device (localStorage) and shows them under **Le mie segnalazioni**, with a compact four-dot tracker under each message in the chat.
+- The citizen page remembers the reports sent from that device (localStorage). The latest one is shown in a large four-step tracker right above the composer; **Vedi tutte / Le mie segnalazioni** opens every report with its full timeline.
 
 ## Architecture
 
@@ -138,3 +153,7 @@ Existing SQLite data is not migrated automatically. For a demo database, export 
 - No accounts, names or contact fields. The conversation lives in the tab (`sessionStorage`) and is gone when the tab closes.
 - Voice recordings pass through this server to Groq for transcription and are never stored; only the text you then choose to send is saved. Without `GROQ_API_KEY` the microphone says transcription is off and everything else works.
 - To swap Groq for another speech-to-text service, implement `Transcriber` (`src/transcription/types.ts`) and change the one line in `server.ts` that creates it.
+
+## Comune operations portal
+
+Open `/officer` (alias `/comune`) for the map, ranked report queue and officer controls. New citizen reports are automatically evaluated by Claude in a durable background queue. See [portal workflow, AI integration and test results](docs/OFFICER-PORTAL.md). Run `npm run test:operations:live` for the three-case live smoke test.

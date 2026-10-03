@@ -5,12 +5,14 @@ export class ApiError extends Error {
    * @param {string} message
    * @param {string} code
    * @param {number} status 0 when the network request itself failed.
+   * @param {Record<string, unknown>} [details] Extra fields from the error body (e.g. `reason`).
    */
-  constructor(message, code, status) {
+  constructor(message, code, status, details = {}) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.status = status;
+    this.details = details;
   }
 
   /** Errors worth retrying unchanged: offline, rate-limited, server or storage hiccups. */
@@ -40,8 +42,8 @@ async function request(url, init) {
     // Non-JSON error page; handled below.
   }
   if (!response.ok) {
-    const { code = 'SERVER_ERROR', message = '' } = /** @type {{ code?: string, message?: string }} */ (body ?? {});
-    throw new ApiError(message, code, response.status);
+    const { code = 'SERVER_ERROR', message = '', ...details } = /** @type {{ code?: string, message?: string } & Record<string, unknown>} */ (body ?? {});
+    throw new ApiError(message, code, response.status, details);
   }
   return /** @type {T} */ (body);
 }

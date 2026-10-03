@@ -83,6 +83,17 @@ for (const adapter of adapters) {
         assert.equal((await repo.timelines([])).size, 0);
       }));
 
+    test('deletes report and timeline atomically, including a pending assessment', () =>
+      withRepo(async repo => {
+        const report = await repo.create({ content_text: 'Disposable issue', image_url: null, latitude: null, longitude: null });
+        await repo.updateStatus(report.id, 'in_progress');
+        const deleted = await repo.delete(report.id);
+        assert.equal(deleted?.id, report.id);
+        assert.equal(await repo.findById(report.id), null);
+        assert.equal((await repo.timelines([report.id])).size, 0);
+        assert.equal(await repo.delete(report.id), null);
+      }));
+
     test('database constraints reject empty reports and half coordinates', () =>
       withRepo(async repo => {
         await assert.rejects(repo.create({ content_text: null, image_url: null, latitude: null, longitude: null }));

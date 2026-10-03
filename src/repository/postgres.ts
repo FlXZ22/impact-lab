@@ -116,6 +116,16 @@ export class PostgresReportRepository implements ReportRepository {
     return rows.map(toReport);
   }
 
+  async delete(id: string): Promise<Report | null> {
+    return this.#transaction(async client => {
+      const { rows } = await client.query<ReportRow>(`SELECT ${COLUMNS} FROM public.reports WHERE id = $1 FOR UPDATE`, [id]);
+      if (!rows[0]) return null;
+      await client.query('DELETE FROM public.report_status_events WHERE report_id = $1', [id]);
+      await client.query('DELETE FROM public.reports WHERE id = $1', [id]);
+      return toReport(rows[0]);
+    });
+  }
+
   async updateStatus(id: string, status: ReportStatus): Promise<Report | null> {
     return this.#transaction(async client => {
       // Row lock: concurrent updates to the same report serialize, so the timeline stays consistent.

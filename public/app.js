@@ -5,7 +5,7 @@ import { resolveLocation } from './js/geo.js';
 import { applyStaticText, language, setLanguage, t } from './js/i18n.js';
 import { InputDock } from './js/input-dock.js';
 import { applyProgress, loadTracked, track } from './js/my-reports.js';
-import { currentLabel, renderTimeline } from './js/status-steps.js';
+import { currentLabel, renderLargeSteps, renderTimeline } from './js/status-steps.js';
 import { ListeningIndicator } from './js/listening-indicator.js';
 import { PhotoError, preparePhoto } from './js/photo.js';
 import { RecordingError, recordingSupported, VoiceRecorder } from './js/voice.js';
@@ -73,11 +73,7 @@ function saveSession() {
 /** Reports sent from this device, with their last known progress. */
 let tracked = loadTracked();
 
-const stream = new ChatStream(/** @type {HTMLOListElement} */ (byId('messages')), byId('conversation'), {
-  onRetry: id => void retry(id),
-  progressOf: reportId => tracked.find(item => item.id === reportId)?.progress ?? null,
-  onOpenStatus: reportId => openMyReports(reportId)
-});
+const stream = new ChatStream(/** @type {HTMLOListElement} */ (byId('messages')), byId('conversation'), id => void retry(id));
 const indicator = new ListeningIndicator(/** @type {HTMLCanvasElement} */ (byId('waveform')), /** @type {HTMLTimeElement} */ (byId('listen-timer')));
 
 /** @param {ChatMessage} message */
@@ -143,10 +139,23 @@ async function deliver(id, draft) {
     track(report);
     tracked = loadTracked();
     renderMyReportsButton();
+    renderStatusCard();
     put({ ...base, state: 'saved', location, report, imageUrl: report.image_url, error: null });
     put({ id: typingId, role: 'assistant', kind: 'reply', text: reply.text, pending: false });
     announce(`${t().announceSaved} ${reply.text}`);
   } catch (error) {
+    if (error instanceof ApiError && error.code === 'REPORT_REJECTED') {
+      // Refused by the safety check: nothing was stored and the draft cannot be resent.
+      drafts.delete(id);
+      if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+      const rejections = /** @type {Record<string, string>} */ (t().rejections);
+      const reason = String(error.details.reason ?? 'off_topic');
+      const explanation = rejections[reason] ?? rejections.off_topic ?? '';
+      put({ ...base, state: 'rejected', location, imageUrl: null, error: null });
+      put({ id: typingId, role: 'assistant', kind: reason === 'emergency' ? 'error' : 'reply', text: explanation, pending: false });
+      announce(`${t().rejected}. ${explanation}`);
+      return;
+    }
     drop(typingId);
     put({ ...base, state: 'failed', location, error: describeError(error) });
     announce(`${t().announceFailed} ${describeError(error)}`);
@@ -198,6 +207,33 @@ function renderMyReportsButton() {
   myReportsButton.setAttribute('aria-label', open > 0 ? `${t().myReports} (${open})` : t().myReports);
 }
 
+const statusCard = byId('status-card');
+const statusCardMore = /** @type {HTMLButtonElement} */ (byId('status-card-more'));
+
+/**
+ * The big tracker above the composer: always the most recent report from this device.
+ * @param {{ changed?: boolean }} [options] Flash the current step when the City has just moved it.
+ */
+function renderStatusCard({ changed = false } = {}) {
+  const latest = tracked[0];
+  statusCard.hidden = !latest?.progress;
+  if (!latest?.progress) return;
+  const strings = t();
+  byId('status-card-kicker').textContent = strings.latestReport(latest.id.slice(0, 4).toUpperCase());
+  byId('status-card-title').textContent = latest.excerpt || strings.photoOnly;
+  statusCardMore.textContent = tracked.length > 1 ? strings.seeAll(tracked.length) : strings.details;
+  statusCardMore.dataset.reportId = latest.id;
+  byId('status-card-steps').replaceChildren(renderLargeSteps(latest.progress));
+  statusCard.classList.toggle('is-done', latest.progress.status === 'resolved');
+  if (changed) {
+    statusCard.classList.remove('just-changed');
+    void statusCard.offsetWidth; // restart the animation
+    statusCard.classList.add('just-changed');
+  }
+}
+
+statusCardMore.addEventListener('click', () => openMyReports(statusCardMore.dataset.reportId));
+
 /** @param {string} iso */
 function formatDay(iso) {
   return new Date(iso).toLocaleString(language() === 'it' ? 'it-IT' : 'en-GB', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
@@ -245,15 +281,14 @@ async function refreshProgress() {
   if (refreshing || tracked.length === 0 || document.visibilityState !== 'visible') return;
   refreshing = true;
   try {
-    const changed = applyProgress(await fetchProgress(tracked.map(item => item.id)));
+    const requestedIds = tracked.map(item => item.id);
+    const changed = applyProgress(await fetchProgress(requestedIds), requestedIds);
+    const previousCount = tracked.length;
     tracked = loadTracked();
-    if (changed.length === 0) return;
+    if (changed.length === 0 && previousCount === tracked.length) return;
     renderMyReportsButton();
+    renderStatusCard({ changed: changed.some(item => item.id === tracked[0]?.id) });
     if (sheet.open) renderMyReports();
-    // Re-render the chat messages whose report moved to a new step.
-    for (const message of messages) {
-      if (message.role === 'user' && message.report && changed.some(item => item.id === message.report?.id)) stream.upsert(message);
-    }
     for (const item of changed) {
       if (item.progress) announce(t().statusChanged(item.id.slice(0, 4).toUpperCase(), currentLabel(item.progress)));
     }
@@ -392,6 +427,7 @@ document.addEventListener('languagechange', () => {
   renderLanguageButton();
   renderConversation();
   renderMyReportsButton();
+  renderStatusCard();
   if (sheet.open) renderMyReports();
 });
 
@@ -401,6 +437,7 @@ dock.setVoiceAvailable(recordingSupported());
 loadSession();
 renderConversation();
 renderMyReportsButton();
+renderStatusCard();
 void refreshProgress();
 // Focus the field on desktop only; on touch devices it would pop the keyboard over the welcome message.
 if (window.matchMedia('(pointer: fine)').matches) dock.textarea.focus({ preventScroll: true });

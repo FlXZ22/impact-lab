@@ -34,7 +34,8 @@
  * @property {string | null} previewUrl Object URL for the local photo preview.
  */
 
-/** @typedef {'locating' | 'sending' | 'saved' | 'failed'} DeliveryState */
+/** @typedef {'locating' | 'sending' | 'saved' | 'failed' | 'rejected'} DeliveryState */
+/** @typedef {'emergency' | 'natural_event' | 'off_topic' | 'abusive' | 'harmful'} RejectionReason */
 
 /**
  * @typedef {object} UserMessage

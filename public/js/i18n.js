@@ -61,6 +61,9 @@ const STRINGS = {
     photoOnly: 'Segnalazione con foto',
     sentOn: 'Inviata',
     followStatus: 'Segui lo stato',
+    latestReport: (/** @type {string} */ number) => `La tua ultima segnalazione · N. ${number}`,
+    seeAll: (/** @type {number} */ n) => `Vedi tutte (${n})`,
+    details: 'Dettagli',
     stepPending: 'In attesa',
     stepOf: (/** @type {number} */ n, /** @type {number} */ total, /** @type {string} */ label) => `Passo ${n} di ${total}: ${label}`,
     statusChanged: (/** @type {string} */ number, /** @type {string} */ label) => `Segnalazione N. ${number}: ${label}`,
@@ -82,7 +85,16 @@ const STRINGS = {
       INVALID_AUDIO: 'Non ho capito la registrazione. Riprova a registrare.',
       AUDIO_TOO_LARGE: 'Registrazione troppo lunga: resta sotto i due minuti.',
       TRANSCRIPTION_FAILED: 'La trascrizione non è riuscita. Riprova o scrivi il messaggio.',
-      TRANSCRIPTION_UNAVAILABLE: 'La trascrizione vocale non è attiva su questo server.'
+      TRANSCRIPTION_UNAVAILABLE: 'La trascrizione vocale non è attiva su questo server.',
+      MODERATION_UNAVAILABLE: 'Non riesco a controllare la segnalazione in questo momento. Riprova tra poco.'
+    },
+    rejected: 'Non segnalabile',
+    rejections: {
+      emergency: 'Sembra un’emergenza: chiama subito il 112. Questo servizio non è monitorato in tempo reale, quindi non registro la segnalazione.',
+      natural_event: 'Non posso registrarla: è un evento naturale che non crea pericoli né barriere per nessuno. Se invece causa un problema, come un albero caduto o un sottopasso allagato, descrivilo e lo segnalo.',
+      off_topic: 'Non posso registrarla: non descrive un problema in un luogo o in un servizio pubblico.',
+      abusive: 'Non posso registrarla: contiene insulti, minacce o contenuti rivolti a una persona.',
+      harmful: 'Non posso registrarla: questo contenuto non è consentito.'
     }
   },
   en: {
@@ -145,6 +157,9 @@ const STRINGS = {
     photoOnly: 'Photo report',
     sentOn: 'Sent',
     followStatus: 'Follow status',
+    latestReport: (/** @type {string} */ number) => `Your latest report · No. ${number}`,
+    seeAll: (/** @type {number} */ n) => `See all (${n})`,
+    details: 'Details',
     stepPending: 'Waiting',
     stepOf: (/** @type {number} */ n, /** @type {number} */ total, /** @type {string} */ label) => `Step ${n} of ${total}: ${label}`,
     statusChanged: (/** @type {string} */ number, /** @type {string} */ label) => `Report No. ${number}: ${label}`,
@@ -166,7 +181,16 @@ const STRINGS = {
       INVALID_AUDIO: 'The recording couldn’t be understood. Try recording again.',
       AUDIO_TOO_LARGE: 'That recording is too long: keep it under two minutes.',
       TRANSCRIPTION_FAILED: 'Transcription failed. Retry or type the message.',
-      TRANSCRIPTION_UNAVAILABLE: 'Voice transcription isn’t enabled on this server.'
+      TRANSCRIPTION_UNAVAILABLE: 'Voice transcription isn’t enabled on this server.',
+      MODERATION_UNAVAILABLE: 'The report can’t be checked right now. Please try again shortly.'
+    },
+    rejected: 'Not reportable',
+    rejections: {
+      emergency: 'This sounds like an emergency: call 112 now. This service isn’t monitored in real time, so the report is not recorded.',
+      natural_event: 'I can’t record this: it’s a natural event that creates no danger or barrier for anyone. If it does cause a problem, like a fallen tree or a flooded underpass, describe that and I’ll report it.',
+      off_topic: 'I can’t record this: it doesn’t describe a problem in a public place or service.',
+      abusive: 'I can’t record this: it contains insults, threats or content aimed at a person.',
+      harmful: 'I can’t record this: this content isn’t allowed.'
     }
   }
 };

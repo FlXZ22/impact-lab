@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#005b4f">
+  <meta name="api-base" content="/api">
+  <title>Segnalazioni illuminazione | Comune di Milano</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Vai al contenuto</a>
+  <header class="site-header">
+    <div class="topbar">Comune di Milano</div>
+    <div class="header-inner">
+      <a class="brand" href="#" aria-label="Comune di Milano, home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span><strong>Milano</strong><small>Servizi online</small></span>
+      </a>
+      <button class="status-shortcut" type="button" data-action="show-status">Controlla una pratica</button>
+    </div>
+  </header>
+
+  <main id="main" class="page-shell">
+    <nav class="steps" aria-label="Avanzamento della segnalazione">
+      <ol>
+        <li class="is-current" data-step-indicator="report"><span>1</span>Segnalazione</li>
+        <li data-step-indicator="review"><span>2</span>Riepilogo</li>
+        <li data-step-indicator="receipt"><span>3</span>Ricevuta</li>
+      </ol>
+    </nav>
+
+    <section class="workspace" id="report-view" data-view="report">
+      <div class="intro">
+        <p class="eyebrow">Illuminazione pubblica</p>
+        <h1>Segnala un lampione guasto</h1>
+        <p>Descrivi il problema e indica dove si trova. Ti mostreremo un riepilogo prima dell’invio.</p>
+      </div>
+
+      <div class="chat-card" aria-labelledby="assistant-title">
+        <div class="assistant-heading">
+          <span class="assistant-icon" aria-hidden="true">✦</span>
+          <div><h2 id="assistant-title">Assistente segnalazioni</h2><p>Ti guida nella compilazione</p></div>
+        </div>
+        <div class="conversation" aria-live="polite">
+          <div class="message assistant"><p>Ciao, raccogliamo insieme le informazioni essenziali sul lampione.</p></div>
+        </div>
+
+        <form id="report-form" novalidate>
+          <div class="form-grid">
+            <div class="field field-wide">
+              <label for="location">Dove si trova il lampione? <span aria-hidden="true">*</span></label>
+              <p class="hint" id="location-hint">Scrivi via e numero civico, oppure un punto di riferimento.</p>
+              <input id="location" name="location" autocomplete="street-address" aria-describedby="location-hint location-error" required maxlength="160" placeholder="Es. Via Dante 12, davanti alla fermata">
+              <p class="field-error" id="location-error"></p>
+            </div>
+            <div class="field">
+              <label for="problem">Qual è il problema? <span aria-hidden="true">*</span></label>
+              <select id="problem" name="problem" required aria-describedby="problem-error">
+                <option value="">Seleziona</option>
+                <option value="spento">Lampione spento</option>
+                <option value="intermittente">Luce intermittente</option>
+                <option value="danneggiato">Lampione danneggiato</option>
+                <option value="acceso-giorno">Acceso durante il giorno</option>
+                <option value="altro">Altro problema</option>
+              </select>
+              <p class="field-error" id="problem-error"></p>
+            </div>
+            <div class="field">
+              <label for="asset-id">Codice lampione <span class="optional">facoltativo</span></label>
+              <p class="hint" id="asset-hint">Lo trovi sull’etichetta del palo.</p>
+              <input id="asset-id" name="assetId" aria-describedby="asset-hint" maxlength="30" placeholder="Es. MI-20481">
+            </div>
+            <div class="field field-wide">
+              <label for="details">Aggiungi dettagli <span class="optional">facoltativo</span></label>
+              <textarea id="details" name="details" rows="4" maxlength="500" placeholder="Es. Il lampione è inclinato verso la strada"></textarea>
+              <p class="counter"><span id="details-count">0</span>/500</p>
+            </div>
+          </div>
+          <div class="notice" role="note">
+            <strong>Non inserire dati sensibili.</strong> Per inviare la segnalazione verrai indirizzato al servizio ufficiale di accesso con SPID o CIE.
+          </div>
+          <div class="form-actions"><button class="button primary" type="submit">Crea il riepilogo</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="workspace" id="review-view" data-view="review" hidden>
+      <div class="intro"><p class="eyebrow">Controlla prima di inviare</p><h1>Riepilogo della segnalazione</h1><p>Verifica che i dati siano corretti. Potrai tornare indietro e modificarli.</p></div>
+      <div class="summary-card">
+        <dl id="summary-list"></dl>
+        <div class="auth-panel">
+          <h2>Accedi per confermare</h2>
+          <p>L’autenticazione avviene sul portale ufficiale del gestore dell’identità. Questo sito non chiede né conserva credenziali.</p>
+          <div class="auth-actions">
+            <a class="button auth" id="spid-link" href="/api/auth/spid">Entra con SPID <span aria-hidden="true">↗</span></a>
+            <a class="button auth secondary-auth" id="cie-link" href="/api/auth/cie">Entra con CIE <span aria-hidden="true">↗</span></a>
+          </div>
+          <label class="checkbox"><input id="authenticated" type="checkbox"> <span>Ho completato l’accesso sul portale ufficiale</span></label>
+          <p class="hint">In produzione lo stato di accesso deve essere restituito dal backend. La casella serve solo a riprendere il flusso dopo il rientro.</p>
+        </div>
+        <div class="form-actions split">
+          <button class="button ghost" type="button" data-action="edit">Modifica</button>
+          <button class="button primary" id="confirm-button" type="button">Conferma e invia</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace" id="receipt-view" data-view="receipt" hidden>
+      <div class="receipt-card">
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <p class="eyebrow">Segnalazione inviata</p>
+        <h1>Abbiamo ricevuto la tua richiesta</h1>
+        <p>Conserva il numero pratica per controllare gli aggiornamenti.</p>
+        <div class="reference"><span>Numero pratica</span><strong id="receipt-id">—</strong><button type="button" data-action="copy-reference">Copia</button></div>
+        <dl class="receipt-details"><div><dt>Stato</dt><dd><span class="status-badge" id="receipt-status">Ricevuta</span></dd></div><div><dt>Data invio</dt><dd id="receipt-date">—</dd></div></dl>
+        <div class="form-actions centered"><button class="button primary" type="button" data-action="show-status">Controlla lo stato</button><button class="button ghost" type="button" data-action="new-report">Nuova segnalazione</button></div>
+      </div>
+    </section>
+
+    <section class="workspace" id="status-view" data-view="status" hidden>
+      <div class="intro"><p class="eyebrow">Le tue richieste</p><h1>Controlla lo stato di una pratica</h1><p>Inserisci il numero indicato nella ricevuta.</p></div>
+      <div class="status-card">
+        <form id="status-form" class="lookup-form" novalidate>
+          <div class="field"><label for="reference">Numero pratica</label><input id="reference" name="reference" required maxlength="60" placeholder="Es. MIL-2026-001234" aria-describedby="reference-error"><p class="field-error" id="reference-error"></p></div>
+          <button class="button primary" type="submit">Cerca pratica</button>
+        </form>
+        <div id="status-result" class="status-result" hidden aria-live="polite"></div>
+        <button class="text-button" type="button" data-action="back-home">← Torna alla segnalazione</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="loading" id="loading" aria-live="assertive" hidden><div><span class="spinner" aria-hidden="true"></span><p>Operazione in corso…</p></div></div>
+  <footer><p>Comune di Milano · Servizio dimostrativo</p><p><a href="#">Accessibilità</a> <a href="#">Privacy</a> <a href="#">Assistenza</a></p></footer>
+</body>
+</html>

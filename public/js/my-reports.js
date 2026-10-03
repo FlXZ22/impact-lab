@@ -50,13 +50,15 @@ export function track(report) {
 /**
  * Stores fresh progress and returns the reports whose status changed.
  * @param {ReportProgress[]} updates
+ * @param {string[]} [requestedIds] IDs included in this successful server lookup.
  * @returns {TrackedReport[]}
  */
-export function applyProgress(updates) {
+export function applyProgress(updates, requestedIds = []) {
   const byId = new Map(updates.map(update => [update.id, update]));
   /** @type {TrackedReport[]} */
   const changed = [];
-  const items = loadTracked().map(item => {
+  const requested = new Set(requestedIds);
+  const items = loadTracked().filter(item => !requested.has(item.id) || byId.has(item.id)).map(item => {
     const update = byId.get(item.id);
     if (!update) return item;
     const next = { ...item, progress: update };
