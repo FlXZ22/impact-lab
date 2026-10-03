@@ -61,9 +61,20 @@ const STRINGS = {
     photoOnly: 'Segnalazione con foto',
     sentOn: 'Inviata',
     followStatus: 'Segui lo stato',
-    latestReport: (/** @type {string} */ number) => `La tua ultima segnalazione · N. ${number}`,
-    seeAll: (/** @type {number} */ n) => `Vedi tutte (${n})`,
-    details: 'Dettagli',
+    nextStep: {
+      title: 'Chi se ne occupa',
+      titleEmergency: 'Sembra un\u2019emergenza',
+      // PRODUCT.md: never imply that an authority has been contacted. This line is why.
+      note: 'Niente \u00e8 stato inviato: questo passaggio lo fai tu.',
+      actions: {
+        CALL: 'Chiama',
+        SUBMIT_FORM: 'Apri il modulo',
+        USE_APP: 'Apri l\u2019app',
+        CALL_EMERGENCY: 'Chiama il 112',
+        ANSWER_QUESTIONS: '',
+        NONE: ''
+      }
+    },
     stepPending: 'In attesa',
     stepOf: (/** @type {number} */ n, /** @type {number} */ total, /** @type {string} */ label) => `Passo ${n} di ${total}: ${label}`,
     statusChanged: (/** @type {string} */ number, /** @type {string} */ label) => `Segnalazione N. ${number}: ${label}`,
@@ -157,9 +168,19 @@ const STRINGS = {
     photoOnly: 'Photo report',
     sentOn: 'Sent',
     followStatus: 'Follow status',
-    latestReport: (/** @type {string} */ number) => `Your latest report · No. ${number}`,
-    seeAll: (/** @type {number} */ n) => `See all (${n})`,
-    details: 'Details',
+    nextStep: {
+      title: 'Who handles this',
+      titleEmergency: 'This looks like an emergency',
+      note: 'Nothing has been sent: this step is yours to take.',
+      actions: {
+        CALL: 'Call',
+        SUBMIT_FORM: 'Open the form',
+        USE_APP: 'Open the app',
+        CALL_EMERGENCY: 'Call 112',
+        ANSWER_QUESTIONS: '',
+        NONE: ''
+      }
+    },
     stepPending: 'Waiting',
     stepOf: (/** @type {number} */ n, /** @type {number} */ total, /** @type {string} */ label) => `Step ${n} of ${total}: ${label}`,
     statusChanged: (/** @type {string} */ number, /** @type {string} */ label) => `Report No. ${number}: ${label}`,

@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'AUDIO_TOO_LARGE'
   | 'TRANSCRIPTION_UNAVAILABLE'
   | 'TRANSCRIPTION_FAILED'
+  // Used by the operations router; declared here so `tsc --strict` passes.
   | 'AI_NOT_CONFIGURED'
   | 'NOT_RETRYABLE'
   | 'SERVER_ERROR';

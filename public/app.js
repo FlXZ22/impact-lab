@@ -124,23 +124,23 @@ function describeError(error) {
 /** @param {string} id @param {ReportDraft} draft */
 async function deliver(id, draft) {
   const base = /** @type {UserMessage} */ (messages.find(message => message.id === id));
-  put({ ...base, state: 'locating', error: null });
+  // routing is cleared on every attempt: a retry must not show the previous answer.
+  put({ ...base, state: 'locating', routing: null, error: null });
 
   const location = await resolveLocation();
-  put({ ...base, state: 'sending', location, error: null });
+  put({ ...base, state: 'sending', location, routing: null, error: null });
 
   const typingId = `${id}:reply`;
   put({ id: typingId, role: 'assistant', kind: 'reply', text: '', pending: true });
 
   try {
-    const { report, reply } = await createReport({ text: draft.text, image: draft.image, position: location.position, language: language() });
+    const { report, reply, nextStep } = await createReport({ text: draft.text, image: draft.image, position: location.position, language: language() });
     drafts.delete(id);
     if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
     track(report);
     tracked = loadTracked();
     renderMyReportsButton();
-    renderStatusCard();
-    put({ ...base, state: 'saved', location, report, imageUrl: report.image_url, error: null });
+    put({ ...base, state: 'saved', location, report, imageUrl: report.image_url, routing: nextStep, error: null });
     put({ id: typingId, role: 'assistant', kind: 'reply', text: reply.text, pending: false });
     announce(`${t().announceSaved} ${reply.text}`);
   } catch (error) {
@@ -157,7 +157,7 @@ async function deliver(id, draft) {
       return;
     }
     drop(typingId);
-    put({ ...base, state: 'failed', location, error: describeError(error) });
+    put({ ...base, state: 'failed', location, routing: null, error: describeError(error) });
     announce(`${t().announceFailed} ${describeError(error)}`);
   }
 }
@@ -175,6 +175,7 @@ function submit(draft) {
     state: 'locating',
     location: null,
     report: null,
+    routing: null,
     error: null,
     createdAt: new Date().toISOString()
   };

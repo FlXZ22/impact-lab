@@ -34,6 +34,7 @@ A conversation instead of a form. The person never chooses a category, recipient
 - No accounts, names or contact fields. The citizen view shows only the current session's conversation.
 - The officer view was removed in the chat MVP; reports are readable through `GET /api/reports`.
 - Not an official City of Milan service; reports are not sent to any authority and are not monitored for emergencies.
+- When routing is configured, the chat also names the public body responsible for the report and offers a one-tap action (a phone number or the body's own form). Sending it remains the citizen's step: the card says so explicitly.
 
 ## Brand Commitments
 

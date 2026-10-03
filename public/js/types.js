@@ -17,7 +17,23 @@
  */
 
 /** @typedef {{ text: string, source: 'claude' | 'fallback' }} AssistantReply */
-/** @typedef {{ report: Report, reply: AssistantReply }} CreateReportResponse */
+
+/** What the citizen is asked to do next. Mirrors the dispatch service's CitizenAction. */
+/** @typedef {'NONE' | 'CALL' | 'SUBMIT_FORM' | 'USE_APP' | 'ANSWER_QUESTIONS' | 'CALL_EMERGENCY'} CitizenAction */
+
+/**
+ * Which public body is responsible for a report, and how to reach it. Null whenever
+ * routing is switched off, unreachable, or had nothing to say.
+ * @typedef {object} RoutingNextStep
+ * @property {string | null} agencyId
+ * @property {string} category
+ * @property {string} status The dispatch service's status, not this app's report status.
+ * @property {CitizenAction} action
+ * @property {string} message Italian, written by the dispatch service.
+ * @property {string | null} deeplink A tel: or https: URI.
+ */
+
+/** @typedef {{ report: Report, reply: AssistantReply, nextStep: RoutingNextStep | null }} CreateReportResponse */
 /** @typedef {{ apiVersion?: number, assistant: boolean, transcription: boolean, maxTextLength: number }} ClientConfig */
 
 /** @typedef {{ latitude: number, longitude: number, accuracy: number }} Position */
@@ -46,6 +62,7 @@
  * @property {DeliveryState} state
  * @property {LocationResult | null} location
  * @property {Report | null} report
+ * @property {RoutingNextStep | null} [routing] Absent on messages saved before routing existed.
  * @property {string | null} error
  * @property {string} createdAt
  */
