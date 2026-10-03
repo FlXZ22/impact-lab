@@ -13,7 +13,7 @@ and how to reach them, instead of guessing between nine phone numbers and a SPID
 > below is fictional.
 
 ---
-
+[slides](https://docs.google.com/presentation/d/13pUiTuJ1pDz6ZQxY_rGsqGCMZHyBdgLW/edit?usp=sharing&ouid=108256449395511123250&rtpof=true&sd=true)
 ## The problem
 
 It's 08:40 on a Tuesday. Someone using a wheelchair comes up to the lift at M3 Lodi and
