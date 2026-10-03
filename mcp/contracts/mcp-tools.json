@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractVersion": "1.0.0",
+  "mcpProtocolVersion": "2025-06-18",
+  "source": "Mockup e specifiche Comune di Milano - Segnalazioni (PDF MET-55)",
+  "tools": [
+    {
+      "name": "prepara_bozza_segnalazione",
+      "title": "Prepara bozza segnalazione",
+      "description": "Prepara una bozza di segnalazione al Comune di Milano e restituisce un bozza_id con la revisione corrente. Non invia nulla e non produce effetti esterni. Usa questa funzione quando l'utente descrive un problema e fornisce una posizione. Dopo la chiamata mostra all'utente il riepilogo e chiedi conferma prima di inviare.",
+      "annotations": {
+        "title": "Prepara bozza segnalazione",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["categoria", "descrizione", "posizione"],
+        "properties": {
+          "categoria": {
+            "type": "string",
+            "enum": [
+              "illuminazione_pubblica",
+              "rifiuti",
+              "strade_e_marciapiedi",
+              "arredo_urbano",
+              "verde_pubblico",
+              "segnaletica",
+              "altre"
+            ],
+            "description": "Categoria della segnalazione."
+          },
+          "sottocategoria": {
+            "type": ["string", "null"],
+            "maxLength": 80,
+            "description": "Dettaglio facoltativo della categoria."
+          },
+          "priorita": {
+            "type": "string",
+            "enum": ["bassa", "media", "alta"],
+            "default": "media",
+            "description": "Priorita dichiarata dall'utente. Il server puo correggerla in base a pericolo e categoria."
+          },
+          "descrizione": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000,
+            "description": "Testo per l'ufficio, in italiano, con i fatti utili alla presa in carico."
+          },
+          "posizione": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["indirizzo"],
+            "properties": {
+              "indirizzo": { "type": "string", "minLength": 3, "maxLength": 200 },
+              "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+              "lon": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+              "precisione": {
+                "type": "string",
+                "enum": ["civico", "via", "quartiere", "gps"],
+                "default": "civico"
+              },
+              "riferimenti": {
+                "type": ["string", "null"],
+                "maxLength": 300,
+                "description": "Riferimenti utili al reperimento, per esempio lato numeri pari o davanti al portone."
+              }
+            }
+          },
+          "destinatario_codice": {
+            "type": ["string", "null"],
+            "maxLength": 64,
+            "description": "Codice dell'ente destinatario. Se assente, il server propone il destinatario in base a categoria e posizione."
+          },
+          "allegati": {
+            "type": "array",
+            "maxItems": 5,
+            "default": [],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tipo", "mime", "nome"],
+              "properties": {
+                "tipo": { "type": "string", "enum": ["foto", "documento"] },
+                "mime": {
+                  "type": "string",
+                  "enum": ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+                },
+                "nome": { "type": "string", "maxLength": 120 },
+                "file_id": {
+                  "type": ["string", "null"],
+                  "description": "Identificativo di un allegato gia caricato sul server tramite POST /api/allegati."
+                },
+                "contenuto_base64": {
+                  "type": ["string", "null"],
+                  "description": "Contenuto inline codificato base64. Massimo 10 MB decodificati. Alternativo a file_id."
+                },
+                "dimensione_byte": {
+                  "type": ["integer", "null"],
+                  "minimum": 0,
+                  "maximum": 10485760
+                }
+              },
+              "anyOf": [{ "required": ["file_id"] }, { "required": ["contenuto_base64"] }]
+            }
+          },
+          "chiave_idempotenza": {
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "Chiave stabile per rendere la creazione ripetibile senza duplicare la bozza."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bozza_id",
+          "revisione",
+          "stato",
+          "categoria",
+          "priorita",
+          "destinatario",
+          "posizione",
+          "descrizione",
+          "allegati",
+          "creata_il",
+          "scade_il"
+        ],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": { "type": "integer", "minimum": 1 },
+          "stato": {
+            "type": "string",
+            "enum": ["bozza", "confermata", "inviata", "annullata", "scaduta"]
+          },
+          "categoria": { "type": "string" },
+          "sottocategoria": { "type": ["string", "null"] },
+          "priorita": { "type": "string", "enum": ["bassa", "media", "alta"] },
+          "destinatario": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["codice", "nome"],
+            "properties": {
+              "codice": { "type": "string" },
+              "nome": { "type": "string" }
+            }
+          },
+          "posizione": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["indirizzo"],
+            "properties": {
+              "indirizzo": { "type": "string" },
+              "lat": { "type": ["number", "null"] },
+              "lon": { "type": ["number", "null"] },
+              "precisione": { "type": "string" },
+              "riferimenti": { "type": ["string", "null"] }
+            }
+          },
+          "descrizione": { "type": "string" },
+          "allegati": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "tipo", "mime", "nome", "dimensione_byte"],
+              "properties": {
+                "id": { "type": "string" },
+                "tipo": { "type": "string" },
+                "mime": { "type": "string" },
+                "nome": { "type": "string" },
+                "dimensione_byte": { "type": "integer" }
+              }
+            }
+          },
+          "creata_il": { "type": "string", "format": "date-time" },
+          "scade_il": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    {
+      "name": "aggiorna_bozza_segnalazione",
+      "title": "Aggiorna bozza segnalazione",
+      "description": "Aggiorna campi di una bozza esistente, per esempio il destinatario quando l'utente sceglie Cambia destinatario. Ogni aggiornamento incrementa la revisione e invalida ogni conferma precedente. Non invia nulla.",
+      "annotations": {
+        "title": "Aggiorna bozza segnalazione",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id", "revisione"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Revisione attesa. Se non coincide con quella sul server la chiamata fallisce con CONFLITTO_REVISIONE."
+          },
+          "categoria": { "type": ["string", "null"] },
+          "priorita": { "type": ["string", "null"], "enum": ["bassa", "media", "alta", null] },
+          "descrizione": { "type": ["string", "null"], "minLength": 10, "maxLength": 2000 },
+          "posizione": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["indirizzo"],
+            "properties": {
+              "indirizzo": { "type": "string", "minLength": 3, "maxLength": 200 },
+              "lat": { "type": ["number", "null"] },
+              "lon": { "type": ["number", "null"] },
+              "precisione": { "type": "string", "enum": ["civico", "via", "quartiere", "gps"] },
+              "riferimenti": { "type": ["string", "null"] }
+            }
+          },
+          "destinatario_codice": { "type": ["string", "null"] },
+          "allegati": {
+            "type": ["array", "null"],
+            "maxItems": 5,
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "outputSchema": { "type": "object" }
+    },
+    {
+      "name": "richiedi_conferma_segnalazione",
+      "title": "Richiedi conferma segnalazione",
+      "description": "Congela la revisione corrente della bozza e restituisce il riepilogo da mostrare all'utente con un conferma_token monouso a scadenza. Non invia nulla. Mostra sempre il riepilogo all'utente e attendi un si esplicito prima di chiamare invia_segnalazione.",
+      "annotations": {
+        "title": "Richiedi conferma segnalazione",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id", "revisione"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id", "revisione", "riepilogo", "conferma_token", "scade_il"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": { "type": "integer" },
+          "riepilogo": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["destinatario", "categoria", "priorita", "posizione", "testo_per_ufficio"],
+            "properties": {
+              "destinatario": { "type": "string" },
+              "categoria": { "type": "string" },
+              "priorita": { "type": "string" },
+              "posizione": { "type": "string" },
+              "testo_per_ufficio": { "type": "string" }
+            }
+          },
+          "conferma_token": { "type": "string" },
+          "scade_il": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    {
+      "name": "invia_segnalazione",
+      "title": "Invia segnalazione",
+      "description": "Invia la segnalazione al Comune di Milano usando la bozza confermata. Richiede il conferma_token emesso da richiedi_conferma_segnalazione per la stessa revisione. Produce un effetto esterno irreversibile e restituisce numero_pratica e timeline. Non chiamare questa funzione senza un si esplicito dell'utente.",
+      "annotations": {
+        "title": "Invia segnalazione",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id", "revisione", "conferma_token"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": { "type": "integer", "minimum": 1 },
+          "conferma_token": { "type": "string" },
+          "chiave_idempotenza": {
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "Chiave stabile per evitare invii duplicati in caso di retry."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "numero_pratica",
+          "bozza_id",
+          "inviata_il",
+          "destinatario",
+          "stato_corrente",
+          "timeline"
+        ],
+        "properties": {
+          "numero_pratica": { "type": "string" },
+          "bozza_id": { "type": "string" },
+          "inviata_il": { "type": "string", "format": "date-time" },
+          "destinatario": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["codice", "nome"],
+            "properties": {
+              "codice": { "type": "string" },
+              "nome": { "type": "string" }
+            }
+          },
+          "stato_corrente": { "type": "string" },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["stato", "etichetta", "raggiunto"],
+              "properties": {
+                "stato": { "type": "string" },
+                "etichetta": { "type": "string" },
+                "raggiunto": { "type": "boolean" },
+                "timestamp": { "type": ["string", "null"], "format": "date-time" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "stato_pratica",
+      "title": "Stato pratica",
+      "description": "Restituisce lo stato e la timeline di una pratica gia inviata, a partire dal numero_pratica. Operazione in sola lettura.",
+      "annotations": {
+        "title": "Stato pratica",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["numero_pratica"],
+        "properties": {
+          "numero_pratica": { "type": "string", "format": "uuid", "description": "Id SegnalaMi restituito da invia_segnalazione." }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["numero_pratica", "stato_corrente", "timeline", "aggiornata_il"],
+        "properties": {
+          "numero_pratica": { "type": "string" },
+          "ente": { "type": ["string", "null"] },
+          "stato_corrente": { "type": "string" },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["stato", "etichetta", "raggiunto"],
+              "properties": {
+                "stato": { "type": "string" },
+                "etichetta": { "type": "string" },
+                "raggiunto": { "type": "boolean" },
+                "timestamp": { "type": ["string", "null"], "format": "date-time" }
+              }
+            }
+          },
+          "aggiornata_il": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    {
+      "name": "elenco_pratiche",
+      "title": "Elenco pratiche",
+      "description": "Elenca le pratiche del cittadino autenticato, con filtro opzionale sullo stato e paginazione a cursore. Operazione in sola lettura.",
+      "annotations": {
+        "title": "Elenco pratiche",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stato": {
+            "type": ["string", "null"],
+            "enum": ["open", "received", "in_progress", "resolved", null]
+          },
+          "limite": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 },
+          "cursore": { "type": ["string", "null"] }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pratiche"],
+        "properties": {
+          "pratiche": { "type": "array", "items": { "type": "object" } },
+          "prossimo_cursore": { "type": ["string", "null"] }
+        }
+      }
+    },
+    {
+      "name": "annulla_bozza_segnalazione",
+      "title": "Annulla bozza segnalazione",
+      "description": "Annulla una bozza non ancora inviata. Non tocca le pratiche gia inviate.",
+      "annotations": {
+        "title": "Annulla bozza segnalazione",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "revisione": { "type": ["integer", "null"], "minimum": 1 }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bozza_id", "stato"],
+        "properties": {
+          "bozza_id": { "type": "string" },
+          "stato": { "type": "string", "enum": ["annullata"] }
+        }
+      }
+    }
+  ]
+}

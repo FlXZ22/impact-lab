@@ -94,6 +94,16 @@ export class SqliteReportRepository implements ReportRepository {
     return this.#db.prepare('SELECT * FROM reports ORDER BY created_at DESC, rowid DESC LIMIT ?').all(limit).map(toReport);
   }
 
+  async delete(id: string): Promise<Report | null> {
+    return this.#transaction(() => {
+      const row = this.#db.prepare('SELECT * FROM reports WHERE id = ?').get(id);
+      if (!row) return null;
+      this.#db.prepare('DELETE FROM report_status_events WHERE report_id = ?').run(id);
+      this.#db.prepare('DELETE FROM reports WHERE id = ?').run(id);
+      return toReport(row);
+    });
+  }
+
   async updateStatus(id: string, status: ReportStatus): Promise<Report | null> {
     return this.#transaction(() => {
       const current = this.#db.prepare('SELECT * FROM reports WHERE id = ?').get(id);

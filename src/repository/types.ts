@@ -15,6 +15,8 @@ export interface ReportRepository {
   init(): Promise<void>;
   create(input: NewReport): Promise<Report>;
   findById(id: string): Promise<Report | null>;
+  /** Permanently removes a report and its status history. Returns the removed row. */
+  delete(id: string): Promise<Report | null>;
   list(options: ListOptions): Promise<Report[]>;
   /** Changes status and appends it to the report's timeline (no event if unchanged). */
   updateStatus(id: string, status: ReportStatus): Promise<Report | null>;

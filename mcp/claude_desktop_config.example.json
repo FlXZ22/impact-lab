@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "comune-milano-segnalazioni": {
+      "command": "node",
+      "args": ["/percorso/assoluto/dist/index.js", "--transport", "stdio"],
+      "env": { "COMUNE_MCP_CONFIRM_SECRET": "sostituire-con-un-segreto-casuale" }
+    }
+  }
+}

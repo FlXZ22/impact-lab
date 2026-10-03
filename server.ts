@@ -27,6 +27,7 @@ const worker = createAssessmentWorker(storage.reports, assessor);
 const server = createApp({ storage, assistant, transcriber, assessor, router }).listen(config.port, config.host, () => {
   console.log(`SegnalaMi on http://${config.host}:${config.port}`);
   console.log(`  storage: ${config.storage.driver} · assistant: ${assistant.enabled ? config.assistant.model : 'off (no ANTHROPIC_API_KEY)'}`);
+  console.log(`  safety check: ${moderator.enabled ? `on (${config.assistant.model})` : 'OFF — no ANTHROPIC_API_KEY, reports are not screened'}`);
   console.log(`  transcription: ${transcriber.enabled ? `groq ${config.transcription.model}` : 'off (no GROQ_API_KEY)'}`);
   console.log(`  routing: ${router.enabled ? config.routing.baseUrl : 'off (no ROUTING_URL)'}`);
 });

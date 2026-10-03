@@ -1,6 +1,5 @@
 /** @import { AssistantMessage, ChatMessage, ReportProgress, RoutingNextStep, UserMessage } from './types.js' */
 import { locale, t } from './i18n.js';
-import { renderCompactSteps } from './status-steps.js';
 
 /**
  * @template {keyof HTMLElementTagNameMap} K
@@ -47,20 +46,16 @@ export class ChatStream {
   /** @type {HTMLElement} */ #scroller;
   /** @type {Map<string, HTMLLIElement>} */ #nodes = new Map();
   /** @type {(id: string) => void} */ #onRetry;
-  /** @type {(reportId: string) => ReportProgress | null} */ #progressOf;
-  /** @type {(reportId: string) => void} */ #onOpenStatus;
 
   /**
    * @param {HTMLOListElement} list
    * @param {HTMLElement} scroller
-   * @param {{ onRetry: (id: string) => void, progressOf: (reportId: string) => ReportProgress | null, onOpenStatus: (reportId: string) => void }} handlers
+   * @param {(id: string) => void} onRetry
    */
-  constructor(list, scroller, { onRetry, progressOf, onOpenStatus }) {
+  constructor(list, scroller, onRetry) {
     this.#list = list;
     this.#scroller = scroller;
     this.#onRetry = onRetry;
-    this.#progressOf = progressOf;
-    this.#onOpenStatus = onOpenStatus;
     // Stay pinned to the newest message while content or the viewport changes size
     // (photos finishing loading, the composer growing, the keyboard opening).
     scroller.addEventListener('scroll', () => {
@@ -214,6 +209,12 @@ export class ChatStream {
 
     if (message.state === 'locating' || message.state === 'sending') {
       receipt.append(el('span', 'receipt-spinner'), el('span', '', message.state === 'locating' ? strings.locating : strings.sending));
+      return receipt;
+    }
+
+    if (message.state === 'rejected') {
+      receipt.classList.add('is-rejected');
+      receipt.append(el('span', 'receipt-state', strings.rejected));
       return receipt;
     }
 

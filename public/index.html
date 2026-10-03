@@ -46,6 +46,17 @@
     </main>
 
     <footer class="dock" id="dock">
+      <section id="status-card" class="status-card" aria-labelledby="status-card-title" hidden>
+        <header class="status-card-head">
+          <div class="status-card-titles">
+            <p class="status-card-kicker" id="status-card-kicker"></p>
+            <h2 class="status-card-title" id="status-card-title"></h2>
+          </div>
+          <button id="status-card-more" class="status-card-more" type="button" aria-haspopup="dialog"></button>
+        </header>
+        <div id="status-card-steps"></div>
+      </section>
+
       <p id="dock-note" class="dock-note" role="status" hidden></p>
 
       <div class="composer-card">
