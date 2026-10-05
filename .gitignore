@@ -10,3 +10,6 @@ test-results/
 .impeccable/*.local.json
 
 .demo-logs/
+
+# Slides live in the README download link; GitHub rejects files over 100 MB.
+*.pptx
