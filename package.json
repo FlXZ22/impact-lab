@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env server.ts",
-    "dev": "node --env-file-if-exists=.env --watch server.ts",
+    "dev": "node --env-file-if-exists=.env --watch-path=src --watch-path=server.ts --watch server.ts",
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json",
     "check": "npm run typecheck && npm test"

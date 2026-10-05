@@ -6,7 +6,7 @@
 one sentence, in any language, and find out immediately which public body is responsible
 and how to reach them, instead of guessing between nine phone numbers and a SPID login.
 
-**Demo video:** `<link>`
+**Demo:** three screencasts below · full walkthrough in [DEMO.md](DEMO.md)
 
 > **This is a prototype, not an official City of Milan service.** It does not transmit
 > reports to any authority and does not monitor them for emergencies. Every example
@@ -58,10 +58,85 @@ If the text suggests immediate danger, routing is short-circuited before any bod
 chosen: the card turns red and says to call 112, because a queue is the wrong place for
 that report.
 
-`<screenshot: the chat with the receipt and the ATM card>`
-`<screenshot: the red emergency card>`
+### Watch it
 
-See [DEMO.md](DEMO.md) for the four-beat walkthrough.
+**A broken lift at M3 Lodi → ATM.** The report saves, then the card names the body, its
+hours and its stated 10-day response, and offers one button.
+
+![Routing a broken station lift to ATM](docs/demo-1-atm-lift.gif)
+
+**An exposed cable → 112.** Routing is short-circuited before any body is chosen.
+
+![An emergency short-circuiting to 112](docs/demo-2-emergency.gif)
+
+**Waste blocking a pavement → Amsa.** Same pipeline, different competence, and a `tel:`
+link instead of a form.
+
+![Routing abandoned waste to Amsa](docs/demo-3-amsa-waste.gif)
+
+Full videos: [1 · ATM](docs/demo-1-atm-lift.mp4) · [2 · emergency](docs/demo-2-emergency.mp4) · [3 · Amsa](docs/demo-3-amsa-waste.mp4).
+The four-beat script is in [DEMO.md](DEMO.md).
+
+In all three, the last line of the card is the same: *"Nothing has been sent: this step is
+yours to take."*
+
+## The routing backend
+
+The chat is one half. The other is
+**[segnalazioni-impact-lab-be](https://github.com/fabianhogger/segnalazioni-impact-lab-be)**
+— a Java 21 / Spring Boot service that holds the competence table, classifies the report,
+and decides who is responsible. Keeping it separate is deliberate: the competence table is
+a civic artefact the Comune should be able to correct without touching an app.
+
+**How they talk.** One HTTP call, made in parallel with the chat reply, never in series:
+
+```
+POST {ROUTING_URL}/api/v1/reports     { text, latitude?, longitude? }
+  → 201 { status, analysis{category,…}, nextStep{agencyId,action,message,deeplink} }
+```
+
+It is best-effort by design. If the backend is slow, down or unconfigured, the report
+still saves, the receipt still appears, and the routing card is simply absent — no error
+for the citizen to decode. The client ([`src/routing.ts`](src/routing.ts)) has an 8-second
+timeout, sheds load, validates the response shape, and never throws. Coordinates outside
+Milan are dropped rather than sent; a report with no text never leaves at all; no contact
+field is ever transmitted, because there is none to transmit.
+
+### The services it routes to
+
+Nine bodies, 17 categories, defined in
+[`agencies.yml`](https://github.com/fabianhogger/segnalazioni-impact-lab-be/blob/main/src/main/resources/agencies.yml)
+as configuration rather than code. The service refuses to start if two bodies claim the
+same category.
+
+| Body | Covers | Channel | Can we deliver it? |
+| --- | --- | --- | --- |
+| **ATM** | metro, tram, bus, BikeMi — *the lift in our demo* | web form + infoline | No — citizen submits |
+| **Amsa** | waste, illegal dumps, bulky items, syringes | phone 800 33 22 99, PULIamo app | No — citizen calls |
+| **Comune — reporting centre** | roads, street cleaning, urban furniture, public green, cemeteries, abandoned vehicles, street lighting | web form, SPID/CIE | No — citizen submits |
+| **Unareti** | electrical faults, blackouts | phone 803500 | No — citizen calls |
+| **Polizia Locale** | non-urgent policing, illegal parking | phone 020208 | No — citizen calls |
+| **ARPA Lombardia** (via the Comune) | noise, pollution, spills | phone, via the Comune | No — citizen calls |
+| **Comune — outreach unit** | people sleeping rough | phone 02 8844 7646 | No — citizen calls |
+| **Comune — 020202** | anything uncategorised, and every low-confidence report | phone / WhatsApp | No — citizen calls |
+| **Comune — SOS Affitti** | irregular rentals | **e-mail** | **Yes** — the one body with an address to write to |
+
+**Eight of nine say "no", and that is the finding, not the bug.** No public body in Milan
+publishes a reporting API, so for everything except one mailbox the service stops one step
+short and hands the citizen a ready-to-send packet instead. We will not close that gap by
+automating a SPID session, replaying a private app's endpoints, or submitting someone
+else's form — those are unauthorised, not merely difficult.
+
+What the repo does instead is leave the seam open and visible. `AgencyAdapter` declares
+two methods — which channel it speaks, and how to dispatch — and the API adapter is
+checked in deliberately empty, because there is nothing yet to call. When a body opens an
+endpoint, the work is one new class plus one line of YAML; nothing else in either repo
+changes. The ask that makes that possible is
+[`municipality-handoff.md`](https://github.com/fabianhogger/segnalazioni-impact-lab-be/blob/main/docs/municipality-handoff.md).
+
+Even the one e-mail channel ships with the safety off: sending is dry-run by default and
+a recipient must be on an explicit allowlist, so a real municipal inbox cannot be written
+to by accident. Two tests exist solely to keep it that way.
 
 ## Where Claude works
 
