@@ -91,8 +91,9 @@ to change it.
 - **Port 8080 is already in use on this machine**, which is why the routing service runs
   on 8081. `demo.sh` handles it; override with `ROUTING_PORT`.
 - **Switching the UI to English** gives an English heading with an Italian body — the
-  routing service only speaks Italian today. Avoid the language toggle on camera, or
-  call it out as known debt.
+  routing service only speaks Italian today. The card now says so underneath ("Written in
+  Italian by the responsible body"), so the toggle is safe on camera; call it out as known
+  debt if you use it.
 - The conversation lives in `sessionStorage`. To reset between takes, open a new private
   window rather than reloading.
 - Keyless, the assistant reply is a fixed sentence rather than a written one. Fine for
