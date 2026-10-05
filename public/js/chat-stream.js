@@ -170,7 +170,14 @@ export class ChatStream {
     const card = el('div', `receipt next-step${emergency ? ' is-emergency' : ''}`);
 
     card.append(el('span', 'receipt-state', emergency ? strings.nextStep.titleEmergency : strings.nextStep.title));
-    card.append(el('span', 'receipt-detail', step.message));
+    // Always Italian: the dispatch service writes it. Tag it so a screen reader in
+    // English mode switches voice instead of reading Italian with English phonetics.
+    const body = el('span', 'receipt-detail', step.message);
+    body.lang = 'it';
+    card.append(body);
+    if (strings.nextStep.sourceLanguage) {
+      card.append(el('span', 'receipt-detail is-note', strings.nextStep.sourceLanguage));
+    }
 
     const label = strings.nextStep.actions[step.action];
     if (step.deeplink && label) {

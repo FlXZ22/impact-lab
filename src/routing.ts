@@ -90,9 +90,15 @@ export function createRouter(config: RoutingConfig): Router {
     async route({ report }) {
       // Photo-only reports are valid here but the dispatch service requires text.
       const text = report.content_text?.trim();
-      if (!text) return null;
+      if (!text) {
+        console.warn('[routing] report has no text; not asking for a next step.');
+        return null;
+      }
       // Shed load instead of queueing: no card beats a late one.
-      if (inFlight >= 4) return null;
+      if (inFlight >= 4) {
+        console.warn('[routing] shedding load (4 calls already in flight); no next step shown.');
+        return null;
+      }
       inFlight++;
       try {
         const response = await fetch(new URL('/api/v1/reports', baseUrl), {

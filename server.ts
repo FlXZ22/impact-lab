@@ -41,7 +41,12 @@ async function shutdown(signal: string): Promise<void> {
   if (closing) return;
   closing = true;
   console.log(`${signal} received, closing…`);
-  server.close();
+  // Wait for in-flight requests: assistant.reply can take 20 s, and cutting the socket
+  // after the insert already landed makes the citizen resend a report that was saved.
+  await Promise.race([
+    new Promise<void>(resolve => server.close(() => resolve())),
+    new Promise<void>(resolve => setTimeout(resolve, 25_000).unref())
+  ]);
   await worker.stop();
   await storage.reports.close();
   process.exit(0);

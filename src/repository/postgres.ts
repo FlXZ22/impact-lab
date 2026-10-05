@@ -112,7 +112,7 @@ export class PostgresReportRepository implements ReportRepository {
   }
 
   async list({ limit }: ListOptions): Promise<Report[]> {
-    const { rows } = await this.#pool.query<ReportRow>(`SELECT ${COLUMNS} FROM public.reports ORDER BY created_at DESC LIMIT $1`, [limit]);
+    const { rows } = await this.#pool.query<ReportRow>(`SELECT ${COLUMNS} FROM public.reports ORDER BY created_at DESC, id DESC LIMIT $1`, [limit]);
     return rows.map(toReport);
   }
 
@@ -156,7 +156,7 @@ export class PostgresReportRepository implements ReportRepository {
   }
 
   async listManaged(): Promise<ManagedReport[]> {
-    const {rows}=await this.#pool.query<ReportRow & Record<string,unknown>>('SELECT * FROM public.reports ORDER BY created_at DESC');
+    const {rows}=await this.#pool.query<ReportRow & Record<string,unknown>>('SELECT * FROM public.reports ORDER BY created_at DESC, id DESC');
     return rows.map(row=>({...toReport(row),...operationsFromRow(row)}));
   }
   async updateOperations(id:string,patch:OperationsPatch):Promise<ManagedReport|null> {

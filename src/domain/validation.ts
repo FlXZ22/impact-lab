@@ -25,8 +25,14 @@ function parseCoordinates(latitude: unknown, longitude: unknown): Coordinates | 
   return { latitude: Math.round(latitude * 1e6) / 1e6, longitude: Math.round(longitude * 1e6) / 1e6 };
 }
 
+const CREATE_REPORT_KEYS = new Set(['text', 'image', 'latitude', 'longitude', 'language']);
+
 export function parseCreateReport(body: unknown): CreateReportInput {
   if (!isRecord(body)) throw new AppError(400, 'INVALID_INPUT', 'Expected a JSON object.');
+  // Silently dropping unknown keys made a typo (or the DB column name `content_text`)
+  // fail as EMPTY_REPORT, which blames the caller for something they did send.
+  const unknown = Object.keys(body).filter(key => !CREATE_REPORT_KEYS.has(key));
+  if (unknown.length) throw new AppError(400, 'INVALID_INPUT', `Unknown field${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}. Expected ${[...CREATE_REPORT_KEYS].join(', ')}.`);
   const { text, image, latitude, longitude, language = 'it' } = body;
 
   if (text != null && typeof text !== 'string') throw new AppError(400, 'INVALID_INPUT', 'Text must be a string.');

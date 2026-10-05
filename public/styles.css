@@ -1259,3 +1259,14 @@ label.ghost-button:focus-within {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* .receipt-retry was written for a <button>, which the UA centres internally. This pill
+   is an <a>, so as a flex item of .receipt it blockifies: without these the icon and
+   label sit on a line box at the top of the 32px pill, and the link is underlined. */
+.next-step .receipt-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+}
