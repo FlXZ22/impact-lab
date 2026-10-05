@@ -44,28 +44,6 @@ export function currentLabel(progress) {
 }
 
 /**
- * Compact horizontal tracker for the chat: four dots and the current step's name.
- * @param {ReportProgress} progress
- */
-export function renderCompactSteps(progress) {
-  const strings = t();
-  const { current } = describe(progress);
-  const wrap = el('div', `steps-compact${progress.status === 'resolved' ? ' is-done' : ''}`);
-  const dots = el('ol', 'steps-dots');
-  dots.setAttribute('aria-hidden', 'true');
-  STEPS.forEach((step, index) => {
-    const dot = el('li', `step-dot${index < current ? ' is-past' : index === current ? ' is-current' : ''}`);
-    dot.dataset.step = step;
-    dots.append(dot);
-  });
-  const label = el('span', 'steps-label', currentLabel(progress));
-  wrap.append(dots, label);
-  wrap.setAttribute('role', 'img');
-  wrap.setAttribute('aria-label', strings.stepOf(current + 1, STEPS.length, currentLabel(progress)));
-  return wrap;
-}
-
-/**
  * Full vertical tracker: every step with its description and time, pending steps greyed.
  * @param {ReportProgress} progress
  */
@@ -90,6 +68,47 @@ export function renderTimeline(progress) {
     }
     body.append(head, el('p', 'timeline-detail', state === 'pending' ? strings.stepPending : strings.steps[step].detail));
     item.append(marker, body);
+    list.append(item);
+  });
+  return list;
+}
+
+/**
+ * Large horizontal tracker for the status card above the composer: numbered markers, a check on
+ * completed steps, the name of every step and the time each one was reached.
+ * @param {ReportProgress} progress
+ */
+export function renderLargeSteps(progress) {
+  const strings = t();
+  const { current, reachedAt } = describe(progress);
+  const done = progress.status === 'resolved';
+  const list = el('ol', `steps-large${done ? ' is-done' : ''}`);
+  list.setAttribute('aria-label', strings.stepOf(current + 1, STEPS.length, currentLabel(progress)));
+  STEPS.forEach((step, index) => {
+    const state = index < current || (done && index === current) ? 'past' : index === current ? 'current' : 'pending';
+    const item = el('li', `step-large is-${state}`);
+    if (index === current) item.setAttribute('aria-current', 'step');
+    const marker = el('span', 'step-large-marker');
+    marker.setAttribute('aria-hidden', 'true');
+    if (state === 'past') {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'icon asset');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', '#a-done');
+      svg.append(use);
+      marker.append(svg);
+    } else {
+      marker.textContent = String(index + 1);
+    }
+    item.append(marker, el('span', 'step-large-label', strings.steps[step].label));
+    const at = reachedAt.get(step);
+    if (state !== 'pending' && at) {
+      const time = /** @type {HTMLTimeElement} */ (el('time', 'step-large-time', formatWhen(at)));
+      time.dateTime = at;
+      item.append(time);
+    } else {
+      item.append(el('span', 'step-large-time', state === 'pending' ? strings.stepPending : ''));
+    }
     list.append(item);
   });
   return list;

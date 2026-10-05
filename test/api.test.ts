@@ -14,6 +14,8 @@ import { assertInOrder } from '../src/repository/migrations.ts';
 import { createStorage, type Storage } from '../src/storage/index.ts';
 import { cleanTranscript, createGroqTranscriber } from '../src/transcription/groq.ts';
 import type { Transcriber } from '../src/transcription/types.ts';
+import { AppError } from '../src/errors.ts';
+import type { Moderator } from '../src/moderation.ts';
 
 /** Records what reached the transcriber so tests can assert on it without calling Groq. */
 const transcriptions: Array<{ mimeType: string; language: string | undefined; bytes: number }> = [];
@@ -232,6 +234,45 @@ describe('POST /api/transcriptions', () => {
     assert.equal(cleanTranscript(' Grazie.'), '');
     assert.equal(cleanTranscript('Ciao a tutti!'), '');
     assert.equal(cleanTranscript('Grazie, il semaforo sonoro è rotto'), 'Grazie, il semaforo sonoro è rotto');
+  });
+});
+
+describe('safety check', () => {
+  /** Refuses by keyword so the test can drive every outcome; real decisions come from Claude. */
+  const keywordModerator: Moderator = {
+    enabled: true,
+    async review({ text }) {
+      if (text?.includes('piove')) return { allowed: false, reason: 'natural_event' };
+      if (text?.includes('incendio')) return { allowed: false, reason: 'emergency' };
+      if (text?.includes('offline')) throw new AppError(503, 'MODERATION_UNAVAILABLE', 'down');
+      return { allowed: true };
+    }
+  };
+
+  test('refused reports are not stored (photo included) and the reason is returned', async () => {
+    const gated = await createStorage({ driver: 'local', sqlitePath: ':memory:', uploadsDir: path.join(dir, 'gated') });
+    const server = createApp({ storage: gated, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, moderator: keywordModerator, router: createRouter({ baseUrl: null }), reportsPerMinute: 1000 }).listen(0, '127.0.0.1');
+    await new Promise(resolve => server.once('listening', resolve));
+    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/reports`;
+    const send = (body: unknown) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    try {
+      const rain = await send({ text: 'Oggi piove molto in centro', image: { media_type: 'image/jpeg', data: await photoBase64() } });
+      assert.equal(rain.status, 422);
+      assert.deepEqual(await rain.json(), { code: 'REPORT_REJECTED', message: 'This cannot be reported here.', reason: 'natural_event' });
+      assert.equal((await send({ text: "C'è un incendio nel palazzo" })).status, 422);
+      const down = await send({ text: 'Rampa rotta ma il controllo è offline' });
+      assert.equal(down.status, 503);
+      assert.equal((await down.json()).code, 'MODERATION_UNAVAILABLE');
+      assert.equal((await gated.reports.list({ limit: 10 })).length, 0);
+      assert.deepEqual(await readdir(path.join(dir, 'gated')), []);
+
+      const ok = await send({ text: 'Ascensore rotto alla fermata Loreto' });
+      assert.equal(ok.status, 201);
+      assert.equal((await gated.reports.list({ limit: 10 })).length, 1);
+    } finally {
+      await new Promise(resolve => server.close(resolve));
+      await gated.reports.close();
+    }
   });
 });
 

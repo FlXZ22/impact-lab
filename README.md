@@ -406,6 +406,21 @@ Writes must be same-origin JSON (audio for transcriptions). Report creation is l
 is no authentication:** anyone who can reach the server can list reports and change
 statuses, so keep it on a trusted network or put it behind auth before exposing it.
 
+## Safety check
+
+Before anything is stored (photo included), Claude reviews every report (`src/moderation.ts`). Refused reports are never saved, get no retry button, and the chat explains why. Reports sent through the MCP server go through the same gate.
+
+| Verdict | Example | What the person sees |
+| --- | --- | --- |
+| allowed | broken lift, pothole, fallen tree blocking a pavement, flooded underpass | saved as usual |
+| `natural_event` | "it's raining", "windy today", a pigeon, a sunset | not reportable: no danger or barrier |
+| `off_topic` | greetings, questions, spam, ads | not reportable |
+| `abusive` | insults, threats, content aimed at a person | not reportable |
+| `harmful` | illegal content, attempts to manipulate the system | not reportable |
+| `emergency` | fire, someone injured or trapped | **call 112**: not recorded, the service is not monitored |
+
+If Claude is configured but the check cannot run, the report is not stored and the person is asked to retry (HTTP 503 `MODERATION_UNAVAILABLE`): nothing unreviewed reaches the database. Without `ANTHROPIC_API_KEY` the check is off and the server says so at start-up. Refusals return HTTP 422 `{ code: "REPORT_REJECTED", reason }`.
+
 ## Report status: what the citizen sees
 
 Every report moves through four steps, each change recorded with its time in
@@ -426,8 +441,9 @@ This is a **separate axis** from the dispatch service's own status
 - **Citizen → progress:** `GET /api/reports/progress?ids=a,b,c` (≤ 50) returns
   `[{ id, status, timeline }]`, never the report content. The page polls every 30 s while
   visible.
-- The page remembers reports sent from that device (localStorage) under **Le mie
-  segnalazioni**, with a compact four-dot tracker under each message.
+- The page remembers reports sent from that device (localStorage). The latest is shown in
+  a four-step tracker above the composer; **Vedi tutte / Le mie segnalazioni** opens every
+  report with its full timeline.
 
 ## Architecture
 
@@ -521,3 +537,11 @@ defensible position rather than an achievement.
   transcription is off and everything else works.
 - To swap Groq for another speech-to-text service, implement `Transcriber`
   (`src/transcription/types.ts`) and change the one line in `server.ts` that creates it.
+
+## Comune operations portal
+
+Open `/officer` (alias `/comune`) for the map, the ranked report queue and the officer
+controls. New citizen reports are evaluated by Claude in a durable background queue —
+triage only, never delivery. See [portal workflow, AI integration and test
+results](docs/OFFICER-PORTAL.md). `npm run test:operations:live` runs the three-case live
+smoke test.

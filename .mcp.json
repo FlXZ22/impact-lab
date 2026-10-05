@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "segnalami": {
+      "command": "node",
+      "args": ["mcp/dist/index.js", "--transport", "stdio"],
+      "env": {
+        "SEGNALAMI_API_URL": "http://127.0.0.1:3000"
+      }
+    }
+  }
+}

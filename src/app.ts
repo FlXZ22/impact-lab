@@ -13,6 +13,7 @@ import type { Storage } from './storage/index.ts';
 import { SUPPORTED_AUDIO_TYPES } from './transcription/groq.ts';
 import type { Transcriber } from './transcription/types.ts';
 import type { Router } from './routing.ts';
+import type { Moderator } from './moderation.ts';
 
 export interface AppDependencies {
   storage: Storage;
@@ -20,6 +21,8 @@ export interface AppDependencies {
   transcriber: Transcriber;
   /** Names the responsible public body. Optional half: a disabled router simply yields no next step. */
   router: Router;
+  /** Safety gate in front of report creation. Omitted or disabled means nothing is screened. */
+  moderator?: Moderator;
   /** Reports per client per minute. */
   reportsPerMinute?: number;
   assessor?: Pick<Assessor,'enabled'|'model'>;
@@ -43,7 +46,7 @@ export const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 /** Bumped when the client/server contract changes; the page warns when it talks to an older server. */
 export const API_VERSION = 2;
 
-export function createApp({ storage, assistant, transcriber, router, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
+export function createApp({ storage, assistant, transcriber, router, moderator, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
   const app = express();
   const imgSources = ["'self'", 'data:', 'blob:', storage.images.publicOrigin].filter(Boolean).join(' ');
 
@@ -56,6 +59,9 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
       'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self'; img-src ${imgSources}; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`
     });
     if (req.path === '/officer' || req.path === '/comune' || req.path.startsWith('/officer/')) {
+      // OSM requires a Referer for browser tile requests. Send only the site origin
+      // cross-origin, never report text, IDs or query parameters.
+      res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
       res.set('Content-Security-Policy', `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src ${imgSources} https://tile.openstreetmap.org; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
     }
     if (req.path.startsWith('/api/')) {
@@ -94,6 +100,12 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
   app.post('/api/reports', createRateLimiter(reportsPerMinute, 60_000), async (req, res) => {
     const input = parseCreateReport(req.body);
     const photo = input.image ? await sanitizePhoto(input.image) : null;
+
+    // Safety gate before anything is stored, photo included.
+    const verdict = moderator ? await moderator.review({ text: input.text, photo }) : { allowed: true as const };
+    if (!verdict.allowed) {
+      throw new AppError(422, 'REPORT_REJECTED', 'This cannot be reported here.', { details: { reason: verdict.reason } });
+    }
 
     let imageUrl: string | null = null;
     if (photo) {
@@ -156,7 +168,7 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
     res.json(report);
   });
 
-  app.use('/api/operations', operationsRouter(storage.reports, assessor));
+  app.use('/api/operations', operationsRouter(storage.reports, storage.images, assessor));
   app.use('/api', (_req, _res, next) => next(new AppError(404, 'NOT_FOUND', 'Unknown endpoint.')));
 
   app.get(['/officer', '/comune'], (_req, res) => res.sendFile(path.join(PROJECT_ROOT, 'public/officer/index.html')));
@@ -171,7 +183,7 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
   app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof AppError) {
       if (error.status >= 500) console.error(`[api] ${error.code}:`, error.cause ?? error.message);
-      return res.status(error.status).json({ code: error.code, message: error.message });
+      return res.status(error.status).json({ code: error.code, message: error.message, ...error.details });
     }
     const type = (error as { type?: unknown } | null)?.type;
     if (type === 'entity.too.large') {

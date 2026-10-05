@@ -133,6 +133,8 @@ p {
 
 .app {
   display: grid;
+  /* minmax(0, …): long single-line content (e.g. the status card title) must truncate, not widen the page. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100dvh;
   min-height: 0;
@@ -291,6 +293,23 @@ p {
 
 .state-failed .bubble {
   background: var(--danger-soft);
+}
+
+/* Refused by the safety check: kept in the conversation, visibly not sent. */
+.state-rejected .bubble {
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+}
+
+.receipt.is-rejected .receipt-state {
+  color: var(--muted);
+}
+
+/* Emergency redirect (call 112): the one message that must not be missed. */
+.kind-error .bubble {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 /* Typing indicator */
@@ -753,95 +772,200 @@ label.ghost-button:focus-within {
   }
 }
 
-/* ---------- Status: compact steps in the chat ---------- */
+/* ---------- Status: big tracker above the composer ---------- */
 
-.steps-button {
-  display: inline-flex;
-  max-width: min(85%, 32rem);
-  padding: 4px 6px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
+.status-card {
+  margin-bottom: 10px;
+  padding: 14px 18px 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.18);
+  animation: message-in 360ms var(--ease-out) both;
+}
+
+.status-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-card-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-card-kicker {
   color: var(--muted);
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.steps-button:hover {
-  background: var(--subtle);
-  color: var(--ink-soft);
+.status-card-title {
+  margin: 1px 0 0;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.steps-compact {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.status-card-more {
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.steps-dots {
-  display: flex;
-  align-items: center;
-  margin: 0;
+.status-card-more:hover {
+  background: #eaf0fa;
+}
+
+.steps-large {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.step-dot {
+.step-large {
   position: relative;
-  width: 8px;
-  height: 8px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 50%;
-  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 4px;
+  text-align: center;
 }
 
-.step-dot + .step-dot {
-  margin-left: 14px;
-}
-
-/* Connector from the previous dot. */
-.step-dot + .step-dot::before {
+/* Rail from the previous marker to this one. */
+.step-large + .step-large::before {
   content: '';
   position: absolute;
-  top: 50%;
-  right: calc(100% + 1.5px);
-  width: 14px;
-  height: 1.5px;
-  background: var(--line-strong);
-  transform: translateY(-50%);
+  top: 15px;
+  left: calc(-50% + 20px);
+  right: calc(50% + 20px);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
 }
 
-.step-dot.is-past,
-.step-dot.is-current {
+.step-large.is-past::before,
+.step-large.is-current::before {
+  background: var(--accent);
+}
+
+.step-large-marker {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-large-marker .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.step-large.is-past .step-large-marker {
   border-color: var(--accent);
   background: var(--accent);
+  color: var(--accent-ink);
 }
 
-.step-dot.is-past + .step-dot::before,
-.step-dot.is-past + .step-dot.is-current::before {
+.step-large.is-current .step-large-marker {
+  border-color: var(--accent);
   background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 5px rgb(0 74 173 / 0.14);
 }
 
-.step-dot.is-current {
-  box-shadow: 0 0 0 3px rgb(0 74 173 / 0.15);
+.step-large-label {
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
-.steps-compact.is-done .step-dot {
+.step-large.is-pending .step-large-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.step-large-time {
+  min-height: 1.2em;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Resolved: the whole tracker turns green. */
+.status-card.is-done {
+  border-color: #cfe7da;
+}
+
+.steps-large.is-done .step-large-marker {
   border-color: var(--ok);
   background: var(--ok);
+  color: #ffffff;
   box-shadow: none;
 }
 
-.steps-compact.is-done .step-dot + .step-dot::before {
+.steps-large.is-done .step-large::before {
   background: var(--ok);
 }
 
-.steps-label {
-  font-weight: 600;
-  color: var(--ink-soft);
+/* The City just moved the latest report: draw the eye to the new step once. */
+.status-card.just-changed {
+  animation: card-flash 1.4s var(--ease-out);
 }
 
-.steps-compact.is-done .steps-label {
-  color: var(--ok);
+.status-card.just-changed [aria-current='step'] .step-large-marker {
+  animation: marker-pop 700ms var(--ease-out);
+}
+
+@keyframes card-flash {
+  0% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgb(0 74 173 / 0.12);
+  }
+}
+
+@keyframes marker-pop {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+@media (max-width: 30rem) {
+  .status-card {
+    padding: 12px 12px 10px;
+  }
+
+  .step-large-label {
+    font-size: 0.75rem;
+  }
+
+  .step-large-time {
+    font-size: 0.6875rem;
+  }
 }
 
 /* ---------- Status: sheet with the full timeline ---------- */

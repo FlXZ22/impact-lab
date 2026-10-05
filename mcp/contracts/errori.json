@@ -1,0 +1,176 @@
+{
+  "contractVersion": "1.0.0",
+  "descrizione": "Catalogo errori del server MCP Comune di Milano - Segnalazioni. Ogni errore di tool viene restituito con isError: true, un testo leggibile e un oggetto strutturato con gli stessi campi di questo catalogo.",
+  "campi": {
+    "codice": "Identificativo stabile e leggibile dal modello.",
+    "http": "Status HTTP usato dalla superficie REST.",
+    "jsonrpc": "Codice JSON-RPC usato solo per errori di protocollo. null se l'errore e di tool.",
+    "categoria": "validazione, autenticazione, autorizzazione, dominio, dipendenza, limite, interno.",
+    "rimediabile": "true se una nuova chiamata corretta o un retry puo avere successo.",
+    "retry_dopo_ms": "Attesa consigliata prima del retry. null se non applicabile.",
+    "messaggio": "Testo in italiano mostrabile all'utente.",
+    "azione_suggerita": "Cosa deve fare il modello o la UI."
+  },
+  "errori": [
+    {
+      "codice": "INPUT_NON_VALIDO",
+      "http": 400,
+      "jsonrpc": -32602,
+      "categoria": "validazione",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "I dati della segnalazione non sono completi o non sono nel formato atteso.",
+      "azione_suggerita": "Correggi i campi indicati in dettagli.campi e riprova."
+    },
+    {
+      "codice": "NON_AUTENTICATO",
+      "http": 401,
+      "jsonrpc": -32001,
+      "categoria": "autenticazione",
+      "rimediabile": false,
+      "retry_dopo_ms": null,
+      "messaggio": "Sessione non valida o scaduta.",
+      "azione_suggerita": "Riavvia il collegamento e completa l'accesso con SPID o CIE sul sito del Comune."
+    },
+    {
+      "codice": "AUTORIZZAZIONE_NEGATA",
+      "http": 403,
+      "jsonrpc": -32002,
+      "categoria": "autorizzazione",
+      "rimediabile": false,
+      "retry_dopo_ms": null,
+      "messaggio": "L'autorizzazione concessa non copre questa operazione.",
+      "azione_suggerita": "Chiedi all'utente di riconcedere i permessi richiesti nelle impostazioni dei connettori."
+    },
+    {
+      "codice": "BOZZA_NON_TROVATA",
+      "http": 404,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "La bozza indicata non esiste piu.",
+      "azione_suggerita": "Crea una nuova bozza con prepara_bozza_segnalazione."
+    },
+    {
+      "codice": "BOZZA_SCADUTA",
+      "http": 410,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "La bozza e scaduta e non puo piu essere inviata.",
+      "azione_suggerita": "Crea una nuova bozza e ripeti il riepilogo con l'utente."
+    },
+    {
+      "codice": "CONFERMA_RICHIESTA",
+      "http": 409,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "Serve una conferma esplicita dell'utente prima dell'invio.",
+      "azione_suggerita": "Chiama richiedi_conferma_segnalazione, mostra il riepilogo e attendi un si esplicito."
+    },
+    {
+      "codice": "TOKEN_CONFERMA_NON_VALIDO",
+      "http": 409,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "La conferma non e piu valida perche la bozza e cambiata o il token e scaduto.",
+      "azione_suggerita": "Rigenera la conferma con richiedi_conferma_segnalazione sulla revisione corrente."
+    },
+    {
+      "codice": "CONFLITTO_REVISIONE",
+      "http": 409,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "La bozza e stata modificata da un'altra operazione.",
+      "azione_suggerita": "Rileggi la bozza, mostra di nuovo il riepilogo e chiedi conferma."
+    },
+    {
+      "codice": "CHIAVE_IDEMPOTENZA_IN_CONFLITTO",
+      "http": 409,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": false,
+      "retry_dopo_ms": null,
+      "messaggio": "La chiave di idempotenza e gia stata usata con dati diversi.",
+      "azione_suggerita": "Usa una chiave nuova solo se l'utente vuole davvero inviare una seconda segnalazione."
+    },
+    {
+      "codice": "PRATICA_NON_TROVATA",
+      "http": 404,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "Non risulta nessuna pratica con questo numero per il cittadino autenticato.",
+      "azione_suggerita": "Verifica il numero di pratica con l'utente."
+    },
+    {
+      "codice": "SEGNALAZIONE_RESPINTA",
+      "http": 422,
+      "jsonrpc": null,
+      "categoria": "dominio",
+      "rimediabile": false,
+      "retry_dopo_ms": null,
+      "messaggio": "Il Comune ha respinto la segnalazione.",
+      "azione_suggerita": "Mostra motivo e dettagli all'utente. Non riprovare senza modifiche."
+    },
+    {
+      "codice": "ALLEGATO_TROPPO_GRANDE",
+      "http": 413,
+      "jsonrpc": null,
+      "categoria": "limite",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "L'allegato supera il limite di 10 MB.",
+      "azione_suggerita": "Chiedi all'utente un file piu piccolo o comprimi l'immagine."
+    },
+    {
+      "codice": "FORMATO_ALLEGATO_NON_SUPPORTATO",
+      "http": 415,
+      "jsonrpc": null,
+      "categoria": "limite",
+      "rimediabile": true,
+      "retry_dopo_ms": null,
+      "messaggio": "Il formato dell'allegato non e supportato.",
+      "azione_suggerita": "Usa JPEG, PNG, WebP o PDF."
+    },
+    {
+      "codice": "TROPPE_RICHIESTE",
+      "http": 429,
+      "jsonrpc": null,
+      "categoria": "limite",
+      "rimediabile": true,
+      "retry_dopo_ms": 2000,
+      "messaggio": "Troppe richieste in poco tempo.",
+      "azione_suggerita": "Attendi retry_dopo_ms e riprova."
+    },
+    {
+      "codice": "SERVIZIO_COMUNE_NON_DISPONIBILE",
+      "http": 503,
+      "jsonrpc": null,
+      "categoria": "dipendenza",
+      "rimediabile": true,
+      "retry_dopo_ms": 5000,
+      "messaggio": "Il servizio del Comune non risponde in questo momento.",
+      "azione_suggerita": "Attendi retry_dopo_ms e riprova con la stessa chiave_idempotenza."
+    },
+    {
+      "codice": "ERRORE_INTERNO",
+      "http": 500,
+      "jsonrpc": -32603,
+      "categoria": "interno",
+      "rimediabile": true,
+      "retry_dopo_ms": 1000,
+      "messaggio": "Errore interno imprevisto.",
+      "azione_suggerita": "Riprova una volta. Se persiste, comunica il valore di dettagli.correlazione_id."
+    }
+  ]
+}

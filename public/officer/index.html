@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SegnalaMi · Portale Comune</title><meta name="description" content="Mappa operativa delle segnalazioni di accessibilità a Milano.">
+  <link rel="icon" href="/favicon.png"><link rel="stylesheet" href="/officer/vendor/leaflet.css"><link rel="stylesheet" href="/officer/portal.css">
+  <script src="/officer/vendor/leaflet.js" defer></script><script type="module" src="/officer/portal.js"></script>
+</head>
+<body>
+<a href="#queue-heading" class="skip">Vai alle segnalazioni</a>
+<header class="topbar">
+  <a class="brand" href="/officer" aria-label="SegnalaMi, portale Comune"><img src="/logo.png" width="144" height="28" alt="SegnalaMi"></a>
+  <span class="header-divider" aria-hidden="true"></span><div class="portal-name">Comune di Milano<span>Portale operativo · prototipo</span></div>
+  <div class="connection"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Connessione…</span></div>
+  <button id="refresh" type="button" class="button subtle"><img src="/officer/icons/clock.svg" alt="">Aggiorna</button>
+  <a class="citizen-link" href="/" target="_blank" rel="noopener">Vista cittadino<img src="/officer/icons/open.svg" alt=""></a>
+</header>
+<div class="shell">
+  <nav class="rail" aria-label="Navigazione portale">
+    <a href="/officer" aria-current="page" title="Mappa segnalazioni" aria-label="Mappa segnalazioni"><img src="/officer/icons/icons8-dashboard-layout.svg" alt=""></a>
+    <button type="button" id="rail-list" title="Vai all’elenco" aria-label="Vai all’elenco"><img src="/officer/icons/library.svg" alt=""></button>
+    <button type="button" id="help-button" title="Come funziona" aria-label="Come funziona" aria-expanded="false" aria-controls="portal-help"><img src="/officer/icons/icons8-help.svg" alt=""></button>
+    <span class="rail-city" aria-hidden="true">MI</span>
+  </nav>
+  <main class="workspace">
+    <div class="workspace-heading"><div><h1>Segnalazioni sul territorio</h1><p>Ogni barriera, una priorità. Ogni intervento, una città più accessibile.</p></div><div class="mobile-views" aria-label="Visualizzazione"><button type="button" id="view-list" aria-pressed="true">Elenco</button><button type="button" id="view-map" aria-pressed="false">Mappa</button></div></div>
+    <div class="summary-strip" aria-label="Riepilogo delle segnalazioni">
+      <span><strong id="count-all">—</strong> totali</span><span><i class="small-dot urgent-dot"></i><strong id="count-urgent">—</strong> alta priorità aperte</span><span><i class="small-dot blue-dot"></i><strong id="count-active">—</strong> in lavorazione</span><span><strong id="count-pending">—</strong> da valutare</span><span class="summary-tail" id="sync-time">In attesa dei dati</span>
+    </div>
+    <div id="portal-help" class="help-panel" hidden><h2>Una vista condivisa, una decisione umana</h2><p>Le segnalazioni arrivano dal portale cittadino. Claude propone priorità, categoria e destinatario; l’operatore verifica e decide. La priorità va da 1 (bassa) a 5 (immediata). Le segnalazioni senza coordinate restano nell’elenco. Nessun intervento o messaggio viene inviato automaticamente.</p><p>I dati si aggiornano ogni 8 secondi. La mappa usa OpenStreetMap. Questo prototipo non è un servizio ufficiale né un sistema di emergenza.</p></div>
+    <div id="configuration-notice" class="notice" hidden></div>
+    <p id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+    <div class="operations-grid">
+      <section class="queue-pane" aria-labelledby="queue-heading">
+        <div class="queue-top"><div class="pane-heading"><h2 id="queue-heading" tabindex="-1">Da esaminare <span id="visible-count" class="count">—</span></h2><button type="button" id="clear-filters" class="text-button">Azzera filtri</button></div>
+          <label class="search"><img src="/officer/icons/icons8-search.svg" alt=""><span class="sr-only">Cerca nelle segnalazioni</span><input id="search" type="search" placeholder="Cerca luogo, problema o ID…" autocomplete="off"></label>
+          <div class="filter-grid"><label>Categoria<select id="filter-category"><option value="">Tutte le categorie</option></select></label><label>Destinatario<select id="filter-department"><option value="">Tutti i destinatari</option></select></label><label>Stato<select id="filter-status"><option value="">Tutti gli stati</option><option value="open">Nuova</option><option value="received">Ricevuta</option><option value="in_progress">In lavorazione</option><option value="resolved">Risolta</option></select></label><label>Priorità<select id="filter-priority"><option value="">Tutte le priorità</option><option value="high">Alta · 4–5</option><option value="3">Media · 3</option><option value="low">Bassa · 1–2</option><option value="pending">Senza priorità</option></select></label></div>
+          <div class="queue-tools"><label class="checkbox"><input id="unlocated" type="checkbox">Senza posizione</label><label class="sort-label"><span class="sr-only">Ordina segnalazioni</span><select id="sort"><option value="priority">Priorità più alta</option><option value="newest">Più recenti</option><option value="oldest">Meno recenti</option></select></label></div>
+        </div>
+        <div id="queue" class="queue" aria-label="Elenco segnalazioni"><div class="queue-placeholder"><span class="loading-line"></span><span class="loading-line short"></span><p>Caricamento delle segnalazioni…</p></div></div>
+        <div class="queue-footer"><span id="unlocated-count">— senza posizione</span><span>Priorità confermabile dall’operatore</span></div>
+      </section>
+      <section class="map-pane" aria-label="Mappa delle segnalazioni di Milano">
+        <div id="map" class="map" aria-label="Mappa interattiva di Milano"></div>
+        <div class="map-label"><strong>Milano</strong><span id="map-count">Caricamento posizioni…</span></div>
+        <button type="button" id="fit-map" class="map-fit button" title="Mostra tutte le segnalazioni sulla mappa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5M12 8v8m-4-4h8"/></svg><span>Inquadra</span></button>
+        <div class="map-legend" aria-label="Legenda priorità"><span>Priorità</span><span><i class="legend-pin level-5"></i>5</span><span><i class="legend-pin level-4"></i>4</span><span><i class="legend-pin level-3"></i>3</span><span><i class="legend-pin level-2"></i>1–2</span><span><i class="legend-pin level-0"></i>Da valutare</span></div>
+        <p id="map-message" class="map-message" role="status" hidden></p>
+      </section>
+      <aside id="inspector" class="inspector" aria-label="Dettaglio segnalazione">
+        <div class="inspector-empty"><img src="/officer/icons/notes.svg" alt=""><h2>Il contesto, prima dell’azione.</h2><p>Seleziona una segnalazione nell’elenco o sulla mappa per leggere la valutazione e gestire l’intervento.</p></div>
+      </aside>
+    </div>
+    <footer class="portal-footer"><span>SegnalaMi · accessibilità urbana</span><span>Valutazioni AI da verificare · nessun invio automatico</span></footer>
+  </main>
+</div>
+<template id="detail-template">
+  <div class="detail-header"><span class="report-reference"></span><button type="button" class="close-detail icon-button" aria-label="Chiudi il dettaglio"><img src="/officer/icons/close.svg" alt=""></button></div>
+  <div class="detail-scroll">
+    <div class="detail-tags"><span class="priority-tag"></span><span class="status-tag"></span></div>
+    <h2 class="detail-title" tabindex="-1"></h2><p class="detail-location"></p><p class="detail-date"></p>
+    <img class="evidence-photo" alt="Foto allegata alla segnalazione" hidden>
+    <section class="detail-section"><h3>Segnalazione originale</h3><blockquote class="original-text"></blockquote></section>
+    <section class="detail-section ai-section"><div class="section-row"><h3>Valutazione Claude</h3><span class="ai-state"></span></div><p class="ai-summary"></p><div class="ai-reason"></div><dl class="assessment-facts"></dl><div class="missing-info" hidden><h4>Da verificare</h4><ul></ul></div><button class="retry-ai button" type="button" hidden>Riprova valutazione AI</button></section>
+    <section class="detail-section officer-section"><h3>Gestione operativa</h3><p class="field-help">Le modifiche dell’operatore hanno precedenza sulla proposta AI.</p>
+      <form class="assignment-form"><label for="assigned-priority">Priorità<select id="assigned-priority"><option value="">Usa proposta AI</option><option value="5">5 · Immediata</option><option value="4">4 · Alta</option><option value="3">3 · Media</option><option value="2">2 · Bassa</option><option value="1">1 · Minima</option></select></label><label for="assigned-department">Destinatario<select id="assigned-department"><option value="">Usa proposta AI</option></select></label><button type="submit" class="button primary save-assignment">Salva assegnazione</button><p class="edit-notice field-help" hidden>Modifiche da salvare</p></form>
+      <form class="status-form"><label for="assigned-status">Stato della segnalazione<select id="assigned-status"><option value="open">Nuova</option><option value="received">Ricevuta</option><option value="in_progress">In lavorazione</option><option value="resolved">Risolta</option></select></label><button type="submit" class="button save-status">Aggiorna stato</button></form>
+      <button type="button" class="discard-edits text-button">Annulla modifiche non salvate</button><p class="assignment-date field-help"></p>
+    </section>
+    <section class="detail-section delete-section" aria-label="Elimina segnalazione">
+      <button type="button" class="button delete-report" aria-expanded="false" aria-controls="delete-confirmation">Elimina segnalazione</button>
+      <div id="delete-confirmation" hidden>
+        <p>Eliminare definitivamente questa segnalazione? Verranno rimossi anche foto, valutazione AI e cronologia. L’azione non può essere annullata.</p>
+        <button type="button" class="button cancel-delete">Annulla</button>
+        <button type="button" class="button confirm-delete">Elimina definitivamente</button>
+      </div>
+    </section>
+  </div>
+</template>
+</body>
+</html>
