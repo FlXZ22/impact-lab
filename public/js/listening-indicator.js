@@ -63,8 +63,10 @@ export class ListeningIndicator {
   #draw() {
     const context = this.#canvas.getContext('2d');
     if (!context) return;
+    // Read after the resize: #resize() rewrites canvas.width/height (and clears the
+    // backing store), so the old values would draw one frame at the wrong scale.
+    if (this.#canvas.width !== Math.round(this.#canvas.clientWidth * (window.devicePixelRatio || 1))) this.#resize();
     const { width, height } = this.#canvas;
-    if (width !== Math.round(this.#canvas.clientWidth * (window.devicePixelRatio || 1))) this.#resize();
 
     const still = this.#reducedMotion.matches || !this.#analyser || !this.#data;
     if (!still && this.#analyser && this.#data) {

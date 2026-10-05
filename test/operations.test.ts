@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { createStorage } from '../src/storage/index.ts';
 import { createApp } from '../src/app.ts';
 import { createAssistant } from '../src/assistant.ts';
+import { createRouter } from '../src/routing.ts';
 import { createAssessmentWorker } from '../src/operations/worker.ts';
 import { parseAssessment,parseOperationsPatch,priorityOf,departmentOf,sortReports,type Assessment } from '../src/operations/domain.ts';
 import { filterReports } from '../public/officer/model.js';
@@ -19,7 +20,7 @@ test('operations queue, filters, human overrides, status history and failure rec
  const storage=await createStorage({driver:'local',sqlitePath:path.join(dir,'test.db'),uploadsDir:path.join(dir,'uploads')});
  const assessor={enabled:true,model:'test-fixture-only',assess:async()=>assessment};
  const worker=createAssessmentWorker(storage.reports,assessor);
- const app=createApp({storage,assistant:createAssistant({apiKey:null,model:'unused'}),transcriber:{enabled:false,transcribe:async()=>''},assessor});
+ const app=createApp({storage,assistant:createAssistant({apiKey:null,model:'unused'}),transcriber:{enabled:false,transcribe:async()=>''},router:createRouter({baseUrl:null}),assessor});
  const server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
  const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;
  const send=(url:string,body:unknown,method='POST')=>fetch(base+url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

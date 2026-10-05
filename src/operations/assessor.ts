@@ -18,7 +18,10 @@ async function loadPhoto(report:Report,storage:Storage):Promise<Buffer|null>{
   if(!report.image_url)return null;
   if(storage.localUploadsDir&&/^\/uploads\/[0-9a-f-]{36}\.jpg$/.test(report.image_url))return readFile(path.join(storage.localUploadsDir,path.basename(report.image_url)));
   const origin=storage.images.publicOrigin;
-  if(origin&&new URL(report.image_url).origin===origin){
+  // A relative legacy /uploads/... path with no local store cannot be fetched; without
+  // this guard new URL() throws TypeError instead of the error the caller expects.
+  const absolute=URL.parse?.(report.image_url)??null;
+  if(origin&&absolute&&absolute.origin===origin){
     const response=await fetch(report.image_url,{signal:AbortSignal.timeout(15000),redirect:'error'});
     if(!response.ok||Number(response.headers.get('content-length')||0)>6*1024*1024)throw new Error('Photo unavailable');
     const data=Buffer.from(await response.arrayBuffer());if(data.length>6*1024*1024)throw new Error('Photo too large');return data;
@@ -31,7 +34,7 @@ export function createAssessor(config:AssistantConfig,storage:Storage):Assessor 
     if(!client)throw new Error('AI_NOT_CONFIGURED');
     const content:Anthropic.ContentBlockParam[]=[{type:'text',text:JSON.stringify({text:report.content_text,latitude:report.latitude,longitude:report.longitude})}];
     const photo=await loadPhoto(report,storage);if(photo)content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:photo.toString('base64')}});
-    const response=await client.messages.create({model:config.model,max_tokens:2048,system:ASSESSMENT_PROMPT,tools:[{name:'assess_report',description:'Return a structured assessment of the supplied civic report for human review. Explain urgency from evidence, classify responsibility, state uncertainty and missing information. This tool sends nothing.',strict:true,input_schema:schema}],tool_choice:{type:'auto'},messages:[{role:'user',content}]});
+    const response=await client.messages.create({model:config.model,max_tokens:2048,system:ASSESSMENT_PROMPT,tools:[{name:'assess_report',description:'Return a structured assessment of the supplied civic report for human review. Explain urgency from evidence, classify responsibility, state uncertainty and missing information. This tool sends nothing.',strict:true,input_schema:schema}],tool_choice:{type:'tool',name:'assess_report'},messages:[{role:'user',content}]});
     const calls=response.content.filter(b=>b.type==='tool_use'&&b.name==='assess_report');
     if(response.stop_reason==='max_tokens'||calls.length!==1||calls[0]?.type!=='tool_use')throw new Error('AI_INVALID_OUTPUT');
     return parseAssessment(calls[0].input);

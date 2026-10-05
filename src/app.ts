@@ -2,7 +2,7 @@ import { operationsRouter } from './operations/routes.ts';
 import type { Assessor } from './operations/assessor.ts';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import path from 'node:path';
-import type { Assistant } from './assistant.ts';
+import { fallbackReply, type Assistant } from './assistant.ts';
 import { PROJECT_ROOT } from './config.ts';
 import { isLanguage, MAX_TEXT_LENGTH, type ReportProgress } from './domain/report.ts';
 import { isReportId, parseCreateReport, parseIdList, parseLimit, parseStatusUpdate } from './domain/validation.ts';
@@ -13,6 +13,7 @@ import type { Storage } from './storage/index.ts';
 import { SUPPORTED_AUDIO_TYPES } from './transcription/groq.ts';
 import type { Transcriber } from './transcription/types.ts';
 import type { Router } from './routing.ts';
+import type { Moderator } from './moderation.ts';
 
 export interface AppDependencies {
   storage: Storage;
@@ -20,6 +21,8 @@ export interface AppDependencies {
   transcriber: Transcriber;
   /** Names the responsible public body. Optional half: a disabled router simply yields no next step. */
   router: Router;
+  /** Safety gate in front of report creation. Omitted or disabled means nothing is screened. */
+  moderator?: Moderator;
   /** Reports per client per minute. */
   reportsPerMinute?: number;
   assessor?: Pick<Assessor,'enabled'|'model'>;
@@ -43,7 +46,7 @@ export const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 /** Bumped when the client/server contract changes; the page warns when it talks to an older server. */
 export const API_VERSION = 2;
 
-export function createApp({ storage, assistant, transcriber, router, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
+export function createApp({ storage, assistant, transcriber, router, moderator, reportsPerMinute = 12, assessor }: AppDependencies): express.Express {
   const app = express();
   const imgSources = ["'self'", 'data:', 'blob:', storage.images.publicOrigin].filter(Boolean).join(' ');
 
@@ -128,9 +131,13 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
 
     // Run together so the citizen waits for the slower of the two, not for both in turn.
     // router.route never rejects, so a dead dispatch service cannot fail the request.
+    // The report is already stored. Neither of these may fail the response, or the client
+    // retries a save that succeeded and we get a duplicate row.
     const [reply, nextStep] = await Promise.all([
-      assistant.reply({ report, language: input.language, photo }),
+      assistant.reply({ report, language: input.language, photo })
+        .catch(error => { console.error('[api] assistant failed after the report was saved:', error); return fallbackReply(report, input.language); }),
       router.route({ report })
+        .catch(error => { console.error('[api] routing failed after the report was saved:', error); return null; })
     ]);
     res.status(201).json({ report, reply, nextStep });
   });
@@ -189,6 +196,15 @@ export function createApp({ storage, assistant, transcriber, router, reportsPerM
         : res.status(413).json({ code: 'IMAGE_TOO_LARGE', message: 'The photo is larger than 5 MB.' });
     }
     if (type === 'entity.parse.failed') return res.status(400).json({ code: 'INVALID_INPUT', message: 'The request body is not valid JSON.' });
+    // Express, `send` and body-parser raise http-errors carrying their own status. Answering
+    // 500 told the page the request was retryable (public/js/api.js) when it never was, and
+    // turned a missing file into "Something went wrong" instead of a plain 404.
+    const status = (error as { status?: unknown; statusCode?: unknown } | null)?.status
+      ?? (error as { statusCode?: unknown } | null)?.statusCode;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      if (status === 404) return res.status(404).json({ code: 'NOT_FOUND', message: 'Not found.' });
+      return res.status(status).json({ code: 'INVALID_INPUT', message: 'The request could not be handled.' });
+    }
     console.error('[api] unexpected error:', error);
     res.status(500).json({ code: 'SERVER_ERROR', message: 'Something went wrong. Please try again.' });
   });

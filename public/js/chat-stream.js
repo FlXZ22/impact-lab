@@ -153,16 +153,6 @@ export class ChatStream {
     }
     if (message.text) bubble.append(el('p', '', message.text));
     item.append(bubble, this.#renderReceipt(message));
-    const progress = message.state === 'saved' && message.report ? this.#progressOf(message.report.id) : null;
-    if (progress && message.report) {
-      const reportId = message.report.id;
-      const button = el('button', 'steps-button');
-      button.type = 'button';
-      button.title = t().followStatus;
-      button.append(renderCompactSteps(progress));
-      button.addEventListener('click', () => this.#onOpenStatus(reportId));
-      item.append(button);
-    }
     // Truthiness, not !== null: messages saved before routing existed have no such field.
     if (message.state === 'saved' && message.routing) item.append(this.#renderNextStep(message.routing));
     return item;
@@ -180,7 +170,14 @@ export class ChatStream {
     const card = el('div', `receipt next-step${emergency ? ' is-emergency' : ''}`);
 
     card.append(el('span', 'receipt-state', emergency ? strings.nextStep.titleEmergency : strings.nextStep.title));
-    card.append(el('span', 'receipt-detail', step.message));
+    // Always Italian: the dispatch service writes it. Tag it so a screen reader in
+    // English mode switches voice instead of reading Italian with English phonetics.
+    const body = el('span', 'receipt-detail', step.message);
+    body.lang = 'it';
+    card.append(body);
+    if (strings.nextStep.sourceLanguage) {
+      card.append(el('span', 'receipt-detail is-note', strings.nextStep.sourceLanguage));
+    }
 
     const label = strings.nextStep.actions[step.action];
     if (step.deeplink && label) {

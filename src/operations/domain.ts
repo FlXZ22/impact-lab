@@ -39,5 +39,12 @@ export function parseOperationsPatch(input:unknown):OperationsPatch {
   return r as OperationsPatch;
 }
 export function operationsFromRow(row:Record<string,unknown>):Omit<ManagedReport,keyof Report> {
-  return {assessment:row.assessment==null?null:parseAssessment(JSON.parse(String(row.assessment))),ai_state:row.ai_state as ManagedReport['ai_state'],ai_error:row.ai_error==null?null:String(row.ai_error),assessment_model:row.assessment_model==null?null:String(row.assessment_model),assessed_at:row.assessed_at==null?null:String(row.assessed_at),priority_override:row.priority_override==null?null:Number(row.priority_override),department_override:row.department_override==null?null:row.department_override as Department,operations_updated_at:row.operations_updated_at==null?null:String(row.operations_updated_at)};
+  // One row written by another schema version must not take down the whole queue:
+  // this runs inside rows.map(), so a throw here 500s every report, not just this one.
+  let assessment=null;
+  if(row.assessment!=null){
+    try{assessment=parseAssessment(JSON.parse(String(row.assessment)));}
+    catch(error){console.warn(`[operations] unreadable assessment on report ${String(row.id)}; showing it as unassessed.`,error);}
+  }
+  return {assessment,ai_state:row.ai_state as ManagedReport['ai_state'],ai_error:row.ai_error==null?null:String(row.ai_error),assessment_model:row.assessment_model==null?null:String(row.assessment_model),assessed_at:row.assessed_at==null?null:String(row.assessed_at),priority_override:row.priority_override==null?null:Number(row.priority_override),department_override:row.department_override==null?null:row.department_override as Department,operations_updated_at:row.operations_updated_at==null?null:String(row.operations_updated_at)};
 }

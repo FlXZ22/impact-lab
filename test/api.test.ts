@@ -106,13 +106,24 @@ describe('POST /api/reports', () => {
       [{ text: 'Auto AB 123 CD sul marciapiede' }, 422, 'PERSONAL_DATA'],
       [{ image: { media_type: 'image/gif', data: 'R0lGOD' } }, 400, 'INVALID_IMAGE'],
       [{ image: { media_type: 'image/png', data: 'YWJj' } }, 400, 'INVALID_IMAGE'],
-      [[], 400, 'INVALID_INPUT']
+      [[], 400, 'INVALID_INPUT'],
+      // Was EMPTY_REPORT: the text was sent, under the column name rather than the field name.
+      [{ content_text: 'Ascensore rotto' }, 400, 'INVALID_INPUT']
     ];
     for (const [body, status, code] of cases) {
       const response = await post(body);
       assert.equal(response.status, status, JSON.stringify(body).slice(0, 80));
       assert.equal((await response.json()).code, code);
     }
+  });
+
+  test('an unknown field is named rather than reported as an empty report', async () => {
+    const response = await post({ content_text: 'Ascensore rotto' });
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.code, 'INVALID_INPUT');
+    assert.match(body.message, /content_text/);
+    assert.match(body.message, /text/);
   });
 
   test('rejects cross-origin and non-JSON writes', async () => {
@@ -251,7 +262,7 @@ describe('safety check', () => {
 
   test('refused reports are not stored (photo included) and the reason is returned', async () => {
     const gated = await createStorage({ driver: 'local', sqlitePath: ':memory:', uploadsDir: path.join(dir, 'gated') });
-    const server = createApp({ storage: gated, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, moderator: keywordModerator, reportsPerMinute: 1000 }).listen(0, '127.0.0.1');
+    const server = createApp({ storage: gated, assistant: createAssistant({ apiKey: null, model: 'unused' }), transcriber: fakeTranscriber, moderator: keywordModerator, router: createRouter({ baseUrl: null }), reportsPerMinute: 1000 }).listen(0, '127.0.0.1');
     await new Promise(resolve => server.once('listening', resolve));
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/reports`;
     const send = (body: unknown) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -308,6 +319,9 @@ describe('units', () => {
   test('personal data guard avoids false positives on ordinary text', () => {
     assert.equal(containsObviousPersonalData("L'ascensore al 123 di via Padova"), false);
     assert.equal(containsObviousPersonalData('Linea 90, fermata 15'), false);
+    // Was true: the old guard matched any 9-15 digit run.
+    assert.equal(containsObviousPersonalData('Pratica 202610051234 gia aperta'), false);
+    assert.equal(containsObviousPersonalData('Chiamate il 3331234567'), true);
     assert.equal(containsObviousPersonalData('scrivete a mario@example.com'), true);
   });
 

@@ -6,6 +6,8 @@
 one sentence, in any language, and find out immediately which public body is responsible
 and how to reach them, instead of guessing between nine phone numbers and a SPID login.
 
+**Demo:** three screencasts below · full walkthrough in [DEMO.md](DEMO.md)
+
 **Demo video:** `<link>`
 
 > **This is a prototype, not an official City of Milan service.** It does not transmit
@@ -13,7 +15,9 @@ and how to reach them, instead of guessing between nine phone numbers and a SPID
 > below is fictional.
 
 ---
-[slides download link](https://www.swisstransfer.com/dl/01a1022e-c974-70d9-8e29-aafcb12e291d)
+
+**Slides:** [download](https://www.swisstransfer.com/dl/01a1022e-c974-70d9-8e29-aafcb12e291d)
+
 ## The problem
 
 It's 08:40 on a Tuesday. Someone using a wheelchair comes up to the lift at M3 Lodi and
@@ -58,10 +62,27 @@ If the text suggests immediate danger, routing is short-circuited before any bod
 chosen: the card turns red and says to call 112, because a queue is the wrong place for
 that report.
 
-`<screenshot: the chat with the receipt and the ATM card>`
-`<screenshot: the red emergency card>`
+### Watch it
 
-See [DEMO.md](DEMO.md) for the four-beat walkthrough.
+**A broken lift at M3 Lodi → ATM.** The report saves, then the card names the body, its
+hours and its stated 10-day response, and offers one button.
+
+![Routing a broken station lift to ATM](docs/demo-1-atm-lift.gif)
+
+**An exposed cable → 112.** Routing is short-circuited before any body is chosen.
+
+![An emergency short-circuiting to 112](docs/demo-2-emergency.gif)
+
+**Waste blocking a pavement → Amsa.** Same pipeline, different competence, and a `tel:`
+link instead of a form.
+
+![Routing abandoned waste to Amsa](docs/demo-3-amsa-waste.gif)
+
+Full videos: [1 · ATM](docs/demo-1-atm-lift.mp4) · [2 · emergency](docs/demo-2-emergency.mp4) · [3 · Amsa](docs/demo-3-amsa-waste.mp4).
+The four-beat script is in [DEMO.md](DEMO.md).
+
+In all three, the last line of the card is the same: *"Nothing has been sent: this step is
+yours to take."*
 
 ## The routing backend
 
@@ -409,8 +430,9 @@ This is a **separate axis** from the dispatch service's own status
 - **Citizen → progress:** `GET /api/reports/progress?ids=a,b,c` (≤ 50) returns
   `[{ id, status, timeline }]`, never the report content. The page polls every 30 s while
   visible.
-- The page remembers reports sent from that device (localStorage) under **Le mie
-  segnalazioni**, with a compact four-dot tracker under each message.
+- The page remembers reports sent from that device (localStorage). The latest is shown in
+  a four-step tracker above the composer; **Vedi tutte / Le mie segnalazioni** opens every
+  report with its full timeline.
 
 ## Architecture
 
@@ -504,3 +526,11 @@ defensible position rather than an achievement.
   transcription is off and everything else works.
 - To swap Groq for another speech-to-text service, implement `Transcriber`
   (`src/transcription/types.ts`) and change the one line in `server.ts` that creates it.
+
+## Comune operations portal
+
+Open `/officer` (alias `/comune`) for the map, the ranked report queue and the officer
+controls. New citizen reports are evaluated by Claude in a durable background queue —
+triage only, never delivery. See [portal workflow, AI integration and test
+results](docs/OFFICER-PORTAL.md). `npm run test:operations:live` runs the three-case live
+smoke test.

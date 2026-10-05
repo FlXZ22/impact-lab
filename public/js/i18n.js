@@ -61,11 +61,15 @@ const STRINGS = {
     photoOnly: 'Segnalazione con foto',
     sentOn: 'Inviata',
     followStatus: 'Segui lo stato',
+    latestReport: (/** @type {string} */ ref) => `Segnalazione N. ${ref}`,
+    seeAll: (/** @type {number} */ n) => `Vedi tutte (${n})`,
+    details: 'Dettagli',
     nextStep: {
       title: 'Chi se ne occupa',
       titleEmergency: 'Sembra un\u2019emergenza',
       // PRODUCT.md: never imply that an authority has been contacted. This line is why.
       note: 'Niente \u00e8 stato inviato: questo passaggio lo fai tu.',
+      sourceLanguage: '',
       actions: {
         CALL: 'Chiama',
         SUBMIT_FORM: 'Apri il modulo',
@@ -168,10 +172,14 @@ const STRINGS = {
     photoOnly: 'Photo report',
     sentOn: 'Sent',
     followStatus: 'Follow status',
+    latestReport: (/** @type {string} */ ref) => `Report No. ${ref}`,
+    seeAll: (/** @type {number} */ n) => `See all (${n})`,
+    details: 'Details',
     nextStep: {
       title: 'Who handles this',
       titleEmergency: 'This looks like an emergency',
       note: 'Nothing has been sent: this step is yours to take.',
+      sourceLanguage: 'Written in Italian by the responsible body.',
       actions: {
         CALL: 'Call',
         SUBMIT_FORM: 'Open the form',
