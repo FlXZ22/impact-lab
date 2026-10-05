@@ -8,11 +8,15 @@ and how to reach them, instead of guessing between nine phone numbers and a SPID
 
 **Demo:** three screencasts below · full walkthrough in [DEMO.md](DEMO.md)
 
+**Demo video:** `<link>`
+
 > **This is a prototype, not an official City of Milan service.** It does not transmit
 > reports to any authority and does not monitor them for emergencies. Every example
 > below is fictional.
 
 ---
+
+**Slides:** [download](https://www.swisstransfer.com/dl/01a1022e-c974-70d9-8e29-aafcb12e291d)
 
 ## The problem
 
@@ -405,21 +409,6 @@ Writes must be same-origin JSON (audio for transcriptions). Report creation is l
 12 and transcription to 30 per client per minute. Errors are `{ code, message }`. **There
 is no authentication:** anyone who can reach the server can list reports and change
 statuses, so keep it on a trusted network or put it behind auth before exposing it.
-
-## Safety check
-
-Before anything is stored (photo included), Claude reviews every report (`src/moderation.ts`). Refused reports are never saved, get no retry button, and the chat explains why. Reports sent through the MCP server go through the same gate.
-
-| Verdict | Example | What the person sees |
-| --- | --- | --- |
-| allowed | broken lift, pothole, fallen tree blocking a pavement, flooded underpass | saved as usual |
-| `natural_event` | "it's raining", "windy today", a pigeon, a sunset | not reportable: no danger or barrier |
-| `off_topic` | greetings, questions, spam, ads | not reportable |
-| `abusive` | insults, threats, content aimed at a person | not reportable |
-| `harmful` | illegal content, attempts to manipulate the system | not reportable |
-| `emergency` | fire, someone injured or trapped | **call 112**: not recorded, the service is not monitored |
-
-If Claude is configured but the check cannot run, the report is not stored and the person is asked to retry (HTTP 503 `MODERATION_UNAVAILABLE`): nothing unreviewed reaches the database. Without `ANTHROPIC_API_KEY` the check is off and the server says so at start-up. Refusals return HTTP 422 `{ code: "REPORT_REJECTED", reason }`.
 
 ## Report status: what the citizen sees
 
