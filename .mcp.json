@@ -1,8 +1,14 @@
 {
-  "mcpServers": {
+  "_comment": "The segnalami MCP server is a theoretical design study, not part of the product. Its registration is kept here, disabled, under _disabled. See mcp/README.md.",
+  "mcpServers": {},
+  "_disabled": {
     "segnalami": {
       "command": "node",
-      "args": ["mcp/dist/index.js", "--transport", "stdio"],
+      "args": [
+        "mcp/dist/index.js",
+        "--transport",
+        "stdio"
+      ],
       "env": {
         "SEGNALAMI_API_URL": "http://127.0.0.1:3000"
       }

@@ -1,5 +1,10 @@
 # UI segnalazioni Comune di Milano
 
+> **MOCKUP, NON IL PRODOTTO.** L'interfaccia di SegnalaMi e' `public/` (cittadino) e
+> `public/officer/` (Comune), servite dalla stessa applicazione. Questa pagina e' una
+> maquette del facade REST del server MCP e duplica l'intake del cittadino; gli endpoint
+> SPID e CIE qui descritti rispondono 501. Non va spedita come parte del prodotto.
+
 Frontend statico senza dipendenze. Per aprirlo in locale:
 
 ```sh

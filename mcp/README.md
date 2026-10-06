@@ -1,5 +1,21 @@
 # Comune di Milano - Segnalazioni, server MCP
 
+> **NON COLLEGATO AL PRODOTTO.** Questo server MCP e' uno studio di progettazione per una
+> futura interfaccia del Comune, non un componente di SegnalaMi. Non viene avviato da
+> nessuna parte: la registrazione in `.mcp.json` e' disattivata e `mcp/` e' escluso dalla
+> build e dalla CI.
+>
+> Attenzione leggendo il codice: il `comuneClient` descritto nella documentazione **non e'
+> mai stato implementato**. `src/backend.ts` chiama l'API di SegnalaMi
+> (`SEGNALAMI_API_URL`, default `http://127.0.0.1:3000`), non un backend del Comune. Le
+> bozze stanno in memoria di processo e le pratiche inviate in
+> `~/.config/segnalami-mcp/pratiche.json`, quindi `elenco_pratiche` elenca solo le
+> segnalazioni inviate da quella singola macchina.
+>
+> La parte che conta e' `contracts/`: e' la specifica piu' chiara che abbiamo di bozze,
+> chiavi di idempotenza, timeline di stato e tassonomia degli errori, e guidera' l'API
+> definitiva. Vedi `docs/consolidation-plan.md` nel repo del backend.
+
 Server Model Context Protocol (MCP) per inviare segnalazioni al Comune di Milano dal proprio assistente e seguirne lo stato. Il modello prepara una bozza, l'utente la conferma, il server invia e restituisce numero di pratica e timeline. L'accesso con SPID o CIE resta sul sito del Comune: le credenziali non passano mai dal server MCP.
 
 Le specifiche funzionali vengono dal PDF "Comune di Milano - Segnalazioni in Claude". L'architettura completa, i contratti e i diagrammi sono in [`docs/architecture.md`](docs/architecture.md).
